@@ -8,24 +8,26 @@ class Shot(BaseModel):
     attempted: int
     pct: float
 
+
 class Rebound(BaseModel):
     treb: int
     dreb: int
     oreb: int
 
+
 class Foul(BaseModel):
     made: int
     drawn: int
+
 
 class Block(BaseModel):
     made: int
     blocked: int
 
+
 class SegevBoxScoreItem(BaseModel):
     """
     Class for boxscore items from Segev Sports
-
-    :param dict item: dict with boxscore stats from response
     """
     player_id: int
     team_id: int

@@ -1,5 +1,3 @@
-from pprint import pprint
-
 from pymongo import MongoClient
 
 from pbp.data_loader.segev_sports.boxscore.db import SegevBoxScoreDBLoader
@@ -64,7 +62,3 @@ class SegevBoxScoreLoader(object):
     @property
     def data(self):
         return [item.dict() for item in self.items]
-
-
-box_score_loader = SegevBoxScoreLoader.from_web('51957')
-pprint(box_score_loader.data)

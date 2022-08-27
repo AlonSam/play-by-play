@@ -1,12 +1,9 @@
-import pbp
-from pbp.data_loader.segev_sports.web_loader import SegevWebLoader
+from datetime import datetime
 
-phases_dict = {
-    '5': 'Regular Season',
-    '16': 'Quarter Finals',
-    '26': 'Semi Finals',
-    '17': 'Finals'
-}
+import pbp
+from pbp.data_loader.segev_sports.details import *
+from pbp.data_loader.segev_sports.web_loader import SegevWebLoader
+from pbp.resources.players.segev_player_item import SegevPlayerItem
 
 
 class SegevDetailsWebLoader(SegevWebLoader):
@@ -15,21 +12,25 @@ class SegevDetailsWebLoader(SegevWebLoader):
     This class should not be instantiated directly.
     """
 
-    def load_data(self, game_id):
+    def load_data(self, basket_id):
+        basket_data = self.load_basket_data(basket_id)
+        game_id = str(basket_data['game_id'])
         self.base_url = pbp.SEGEV_ACTIONS_BASE_URL + game_id
         self.source_data = self._load_request_data()
         self.source_data = self.source_data['result']['gameInfo']
-        return self.source_data
+        players = self.get_players()
+        self.source_data = self.fix_details(basket_data)
+        return self.source_data, players
 
     def load_basket_data(self, basket_id):
         self.base_url = pbp.BASKET_GAME_DATA_BASE_URL + basket_id
         base_data = self._load_request_data()
         base_data = base_data[0]['games'][0]
-        self.basket_data = {
+        basket_data = {
             'basket_id': base_data['id'],
             'game_id': int(base_data['ExternalID']),
             'season': str(base_data['game_year']),
-            'phase': phases_dict[str(base_data['game_type'])],
+            'phase': PHASES[str(base_data['game_type'])],
             'round': base_data['GN'],
             'home_score': base_data['score_team1'],
             'away_score': base_data['score_team2'],
@@ -37,9 +38,44 @@ class SegevDetailsWebLoader(SegevWebLoader):
             'referees': [ref.strip() for ref in base_data['ref_eng'].split(',')],
             'observer': base_data['observer_eng'].strip()
         }
-        return self.basket_data
+        return basket_data
 
+    def get_players(self):
+        names = ['home', 'away']
+        players = []
+        for name in names:
+            raw_players = self.source_data[f'{name}Team']['players']
+            players += [SegevPlayerItem(player, self.source_data[f'{name}Team']['id']) for player in raw_players]
+        return players
 
+    def fix_details(self, basket_data):
+        new_item = basket_data
+        new_item.update({
+            'final': self.is_finished(self.source_data),
+            'time': datetime.strptime(self.source_data['time'], '%Y-%m-%dT%H:%M:%S'),
+            'home_team': self.fix_name(self.source_data['homeTeam']['name']),
+            'home_id': int(self.source_data['homeTeam']['id']),
+            'away_team': self.fix_name(self.source_data['awayTeam']['name']),
+            'away_id': int(self.source_data['awayTeam']['id']),
+            'competition': self.source_data['competition']['name']
+        })
+        return new_item
+
+    @staticmethod
+    def is_finished(item):
+        return item['gameFinished'] or item['currentQuarter'] == 4 and item['currentQuarterTime']['m'] == 0\
+        and item['currentQuarterTime']['s'] == 0
+
+    @staticmethod
+    def fix_name(tm):
+        if tm in TEAM_NAMES.keys():
+            return TEAM_NAMES[tm]
+        else:
+            names = tm.split(' ')
+            team = ''
+            for name in names:
+                team += name.capitalize() + ' '
+            return team.strip()
 
     @property
     def data(self):

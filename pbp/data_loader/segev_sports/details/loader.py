@@ -1,17 +1,12 @@
+from pprint import pprint
+
 from pymongo import MongoClient
 
 from pbp.data_loader.segev_sports.details.db import SegevDetailsDBLoader
 from pbp.data_loader.segev_sports.details.web import SegevDetailsWebLoader
+from pbp.data_loader.segev_sports.web_loader import SegevWebLoader
 from pbp.resources.games.segev_game_item import SegevGameItem
-from pbp.resources.players.segev_player_item import SegevPlayerItem
 from pbp.resources.teams.segev_team_item import SegevTeamItem
-
-
-class DataCannotBeLoadedException(Exception):
-    """
-    Class for exception when trying to load data from database without game_id or when trying to load data
-    from web without basket_id
-    """
 
 
 class SegevDetailsLoader(object):
@@ -26,43 +21,37 @@ class SegevDetailsLoader(object):
     resource = 'details'
     parent_object = 'Game'
 
-    def __init__(self, source, game_id=None, basket_id=None):
+    def __init__(self, source: SegevWebLoader, game_id=None, basket_id=None):
         self.source = source
-        if self.source == 'db':
-            if game_id:
-                self.game_id = game_id
-                self.load_data_from_db()
-            else:
-                raise DataCannotBeLoadedException('Cannot load data from database without game_id')
-        elif basket_id:
-            self.basket_id = basket_id
-            self.load_data_from_web()
+        self.game_id = game_id
+        self.basket_id = basket_id
+        self._load_data()
+
+    def _load_data(self):
+        if self.basket_id:
+            self.source_data, self.players = self.source.load_data(self.basket_id)
+            self.game_id = str(self.source_data['game_id'])
+            self._make_game_item()
+            self._save_data_to_db()
         else:
-            raise DataCannotBeLoadedException('Cannot load data from web without basket_id')
+            self.source_data = self.source.load_data(self.game_id)
+            self.basket_id = str(self.source_data['basket_id'])
+            self._make_game_item()
 
-    def load_data_from_db(self):
-        source_loader = SegevDetailsDBLoader()
-        self.source_data = source_loader.load_data(self.game_id)
-        self._make_game_item()
+    @classmethod
+    def from_web(cls, game_id):
+        return cls(SegevDetailsWebLoader(), basket_id=game_id)
 
-    def load_data_from_web(self):
-        self.basket_data = self.load_basket_data()
-        self.game_id = str(self.basket_data['game_id'])
-        source_loader = SegevDetailsWebLoader()
-        self.source_data = source_loader.load_data(self.game_id)
-        self._save_players_to_db()
-        self._make_game_item()
-        self._save_teams_to_db()
-        self._save_data_to_db()
-
-    def load_basket_data(self):
-        if self.source == 'web':
-            source_loader = SegevDetailsWebLoader()
-        else:
-            source_loader = SegevDetailsDBLoader()
-        return source_loader.load_basket_data(self.basket_id)
+    @classmethod
+    def from_db(cls, game_id):
+        return cls(SegevDetailsDBLoader(), game_id=game_id)
 
     def _save_data_to_db(self):
+        self._save_game_to_db()
+        self._save_teams_to_db()
+        self._save_players_to_db()
+
+    def _save_game_to_db(self):
         col = self.db.games
         col.update_one({'_id': int(self.game_id), 'basket_id': int(self.basket_id)},
                        {'$set': {'details': self.data}}, upsert=True)
@@ -77,10 +66,6 @@ class SegevDetailsLoader(object):
 
     def _save_players_to_db(self):
         names = ['home', 'away']
-        self.players = []
-        for name in names:
-            raw_players = self.source_data[f'{name}Team']['players']
-            self.players += [SegevPlayerItem(player, self.source_data[f'{name}Team']['id']) for player in raw_players]
         col = self.db.players
         for player in self.players:
             col.update_one({'_id': player.id}, {'$set': {'name': player.name, 'hebrew_name': player.hebrew_name,
@@ -88,15 +73,12 @@ class SegevDetailsLoader(object):
                                                 '$addToSet': {'games': int(self.game_id)}}, upsert=True)
 
     def _make_game_item(self):
-        if hasattr(self, 'basket_data'):
-            self.item = SegevGameItem(self.source_data, self.basket_data)
-        else:
-            self.item = SegevGameItem(self.source_data)
+        self.item = SegevGameItem(**self.source_data)
 
     @property
     def data(self):
-        return self.item.data
+        return self.item.dict()
 
 
-# game_id = '51959'
-# pbp_loader = SegevDetailLoader('web', basket_id='24484')
+box_score_loader = SegevDetailsLoader.from_web('24483')
+pprint(box_score_loader.data)
