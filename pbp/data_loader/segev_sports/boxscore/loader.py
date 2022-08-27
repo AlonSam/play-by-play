@@ -1,3 +1,5 @@
+from pprint import pprint
+
 from pymongo import MongoClient
 
 from pbp.data_loader.segev_sports.boxscore.db import SegevBoxScoreDBLoader
@@ -21,39 +23,27 @@ class SegevBoxScoreLoader(object):
     def __init__(self, game_id, source):
         self.game_id = game_id
         self.source = source
-        self.source_data = self.load_data()
+        self.source_data = self.source.load_data(self.game_id)
         self._make_boxscore_items()
         self._save_data_to_db()
         self.client.close()
 
-    def load_data(self):
-        if self.source == 'web':
-            source_loader = SegevBoxScoreWebLoader()
-        else:
-            source_loader = SegevBoxScoreDBLoader()
-        return source_loader.load_data(self.game_id)
-
     def _make_boxscore_items(self):
-        if 'result' in self.source_data:
-            self.source_data = self.source_data['result']['boxscore']
-            home_id = self.source_data['gameInfo']['homeTeamId']
-            away_id = self.source_data['gameInfo']['awayTeamId']
-            home = self.source_data['homeTeam']
-            away = self.source_data['awayTeam']
-            self.items = [SegevBoxScoreItem(item, self.game_id, home_id) for item in home['players']]
-            self.items += [SegevBoxScoreItem(item, self.game_id, away_id) for item in away['players']]
-            home['teamActions'].update(self.source_data['gameInfo']['homeGameStats'])
-            away['teamActions'].update(self.source_data['gameInfo']['awayGameStats'])
-            self.items.append(SegevBoxScoreItem(home['teamActions'], self.game_id, home_id))
-            self.items.append(SegevBoxScoreItem(away['teamActions'], self.game_id, away_id))
-        else:
-            self.items = [SegevBoxScoreItem(item, self.game_id) for item in self.source_data]
+        self.items = [SegevBoxScoreItem(**item) for item in self.source_data]
+
+    @classmethod
+    def from_web(cls, game_id):
+        return cls(game_id, SegevBoxScoreWebLoader())
+
+    @classmethod
+    def from_db(cls, game_id):
+        return cls(game_id, SegevBoxScoreDBLoader())
 
     def _save_data_to_db(self):
         self._save_data_by_game()
         for item in self.items:
             self._save_data_by_team(item)
-            if hasattr(item, 'player_id'):
+            if hasattr(item, 'player_id') and item.player_id != 0:
                 self._save_data_by_player(item)
         self.client.close()
 
@@ -64,13 +54,17 @@ class SegevBoxScoreLoader(object):
     def _save_data_by_team(self, item):
         col = self.db.teams
         query = {'_id': item.team_id}
-        col.update_one(query, {'$addToSet': {'boxscores': item.data}}, upsert=True)
+        col.update_one(query, {'$addToSet': {'boxscores': item.dict()}}, upsert=True)
 
     def _save_data_by_player(self, item):
         col = self.db.players
         query = {'_id': item.player_id}
-        col.update_one(query, {'$addToSet': {'boxscores': item.data}}, upsert=True)
+        col.update_one(query, {'$addToSet': {'boxscores': item.dict()}}, upsert=True)
 
     @property
     def data(self):
-        return [item.data for item in self.items]
+        return [item.dict() for item in self.items]
+
+
+box_score_loader = SegevBoxScoreLoader.from_web('51957')
+pprint(box_score_loader.data)
