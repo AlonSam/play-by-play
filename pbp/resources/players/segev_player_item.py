@@ -1,8 +1,6 @@
 class SegevPlayerItem(object):
     """
     class for player data from Segev Sports
-
-    :param dict item: dict with player data
     """
     competitions = []
 
