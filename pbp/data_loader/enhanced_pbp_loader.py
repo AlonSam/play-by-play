@@ -84,11 +84,11 @@ class EnhancedPbpLoader(object):
             elif event.action_type == 'blocked':
                 self.items.remove(event)
             elif event.action_type == 'foul':
-                self.event_within_5_seconds(event, i, 'foulon')
-                if not hasattr(event, 'foulon'):
-                    # Check if foulon appears before foul
+                self.event_within_5_seconds(event, i, 'foul_on')
+                if not hasattr(event, 'foul_on'):
+                    # Check if foul_on appears before foul
                     prev_event = self.items[i - 1]
-                    if prev_event.action_type == 'foulon' and event.team != prev_event.team:
+                    if prev_event.action_type == 'foul_on' and event.team != prev_event.team:
                         event.steal = prev_event.player_id
                         self.items.remove(prev_event)
             elif event.action_type == 'substitution':
@@ -117,10 +117,54 @@ class EnhancedPbpLoader(object):
                        (action not in team_actions and event.team_id != next_event.team_id):
                         if action == 'in' or action == 'out':
                             action = f'sub_{action}_player_id'
-                        setattr(event, action, next_event.player_id)
+                            setattr(event, action, next_event.player_id)
                     self.items.remove(next_event)
                     break
             idx += 1
+
+    def find_related_sub(self, idx):
+        event = self.items[idx]
+        map_sub = {'in': 'out', 'out': 'in'}
+        events = self.get_upcoming_events_at_current_time(idx)
+        first_sub = None
+        for ev in events:
+            if ev.action_type != 'substitution' or (ev.action_type == 'substitution' and event.team_id != ev.team_id):
+                continue
+            if map_sub[event.sub_type] == ev.sub_type:
+                if event.player_id == ev.player_id:
+                    return ev
+                elif not first_sub:
+                    first_sub = ev
+        return first_sub
+
+    def pair_subs_at_current_time(self, idx):
+        event = self.items[idx]
+        events = [event]
+        events += self.get_upcoming_events_at_current_time(idx)
+        subs_in = [ev for ev in events if ev.action_type == 'substitution' and ev.team_id == event.team_id and ev.sub_type == 'in']
+        subs_out = [ev for ev in events if ev.action_type == 'substitution' and ev.team_id == event.team_id and ev.sub_type == 'out']
+        subs_in_to_remove = []
+        subs_out_to_remove = []
+        for sub in subs_in:
+            self_sub = [ev for ev in subs_out if sub.player_id == ev.player_id]
+            if len(self_sub) > 0:
+                sub.sub_in_player_id = sub.player_id
+                sub.sub_out_player_id = self_sub[0].player_id
+                subs_out_to_remove.append(self_sub[0])
+                subs_in_to_remove.append(sub)
+                subs_out.remove(self_sub[0])
+                delattr(sub, 'player_id')
+                delattr(sub, 'sub_type')
+        for sub in subs_in_to_remove:
+            subs_in.remove(sub)
+        if len(subs_in) != len(subs_out):
+            raise Exception('You are a failure!')
+        for i in range(len(subs_in)):
+            subs_in[i].sub_in_player_id = subs_in[i].player_id
+            subs_in[i].sub_out_player_id = subs_out[i].player_id
+            delattr(subs_in[i], 'player_id')
+            delattr(subs_in[i], 'sub_type')
+        return subs_out_to_remove + subs_out
 
     def add_free_throw_count(self):
         """
@@ -141,28 +185,45 @@ class EnhancedPbpLoader(object):
 
     def get_previous_events_at_current_time(self, idx):
         event = self.items[idx]
-        prev_event = self.items[idx - 1]
-        lst = []
+        i = idx - 1
+        prev_event = self.items[i]
+        events = []
         while idx > 0 and (event.period == prev_event.period and event.seconds_remaining == prev_event.seconds_remaining):
-            lst.append(prev_event)
-            idx -= 1
-            prev_event = self.items[idx - 1]
-        return lst
+            events.append(prev_event)
+            i -= 1
+            prev_event = self.items[i]
+        return events
+
+    def get_upcoming_events_at_current_time(self, idx):
+        event = self.items[idx]
+        i = idx + 1
+        next_event = self.items[i]
+        events = []
+        while idx < len(self.items) and (
+                event.period == next_event.period and event.seconds_remaining == next_event.seconds_remaining):
+            events.append(next_event)
+            i += 1
+            next_event = self.items[i]
+        return events
+    def get_all_events_at_current_time(self, idx):
+        events = self.get_previous_events_at_current_time(idx)
+        events += self.get_upcoming_events_at_current_time(idx)
+        return events
 
     def get_related_events(self, idx):
         """
         Used only by FIBA Live Stats and Segev Sports.
         """
         event_id = self.items[idx].event_id
-        prev_event_id = self.items[idx].previous_event_id
+        prev_event_id = self.items[idx].parent_event_id
         related = []
         prev_events = self.get_previous_events_at_current_time(idx)
         for event in prev_events:
-            if event.previous_event_id == event_id or (prev_event_id != 0 and (event.previous_event_id == prev_event_id)):
+            if event.parent_event_id == event_id or (prev_event_id != 0 and (event.parent_event_id == prev_event_id)):
                 related.append(event)
         idx += 1
-        while idx < len(self.items) and (self.items[idx].previous_event_id == event_id
-                                         or (prev_event_id != 0 and (self.items[idx].previous_event_id == prev_event_id))):
+        while idx < len(self.items) and (self.items[idx].parent_event_id == event_id
+                                         or (prev_event_id != 0 and (self.items[idx].parent_event_id == prev_event_id))):
             related.append(self.items[idx])
             idx += 1
         return related

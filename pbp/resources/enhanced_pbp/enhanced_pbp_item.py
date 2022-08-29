@@ -1,19 +1,13 @@
 import abc
 
+from pbp.objects.my_base_model import MyBaseModel
 from pbp.resources.enhanced_pbp import FieldGoal, Foul, FreeThrow, Rebound
 
 
-class EnhancedPbpItem(metaclass=abc.ABCMeta):
+class EnhancedPbpItem(MyBaseModel, metaclass=abc.ABCMeta):
     """
     An Abstract Class for all enhanced pbp event types
     """
-
-    def __init__(self):
-        self.export_data = None
-
-    def __repr__(self):
-        return f'{type(self).__name__} GameId: {self.game_id}, Description: {self.description}, Time: {self.time},' \
-               f'EventNum: {self.event_id}'
 
     @abc.abstractproperty
     def is_possession_ending_event(self):
@@ -29,7 +23,7 @@ class EnhancedPbpItem(metaclass=abc.ABCMeta):
         """
         pass
 
-    def get_all_events_at_current_time(self):
+    def get_all_events_at_current_time(self) -> list:
         """
         returns list of all events that take place at the same time as the current event
         """
@@ -49,16 +43,16 @@ class EnhancedPbpItem(metaclass=abc.ABCMeta):
         return sorted(events, key=lambda k: k.event_id)
 
     @property
-    def players_on_court(self):
+    def players_on_court(self) -> list:
         """
         returns dict with list of player ids for each team with players on court for current event
         For all non substitution events on court players are just the same as previous event
         This function gets overwritten in enhanced_pbp.substitution.Subsitutiton
         """
-        return self.previous_event.players_on_court
+        return self.previous_event.players_on_court.copy()
 
     @property
-    def seconds_since_previous_event(self):
+    def seconds_since_previous_event(self) -> int:
         """
         returns the number of seconds that have elapsed since the previous event
         """
@@ -71,7 +65,7 @@ class EnhancedPbpItem(metaclass=abc.ABCMeta):
         return self.previous_event.seconds_remaining - self.seconds_remaining
 
     @property
-    def is_second_chance_event(self):
+    def is_second_chance_event(self) -> bool:
         """
         return True if the event takes place after an offensive rebound
         on the current possession, False otherwise
@@ -86,7 +80,7 @@ class EnhancedPbpItem(metaclass=abc.ABCMeta):
         return False
 
     @property
-    def is_penalty_event(self):
+    def is_penalty_event(self) -> bool:
         """
         returns True if the team on defense is over the limit (no fouls to give), False otherwise
         """
@@ -114,7 +108,7 @@ class EnhancedPbpItem(metaclass=abc.ABCMeta):
         return False
 
     @property
-    def counts_as_possession(self):
+    def counts_as_possession(self) -> bool:
         """
         returns True if event is possession changing event that should count as a real possession, False otherwise.
         Possessions that begin with less than 2 seconds left and have no point scored will not be counted.
@@ -138,7 +132,7 @@ class EnhancedPbpItem(metaclass=abc.ABCMeta):
         return False
 
     @property
-    def lineup_ids(self):
+    def lineup_ids(self) -> dict:
         """
         returns dict with lineup ids for each team for current event.
         Lineup ids are hyphen seperated sorted player id strings
@@ -159,22 +153,11 @@ class EnhancedPbpItem(metaclass=abc.ABCMeta):
         team_ids = list(self.players_on_court.keys())
         opponent_team_id = team_ids[0] if self.team_id == team_ids[1] else team_ids[1]
         data = {
-            'event_id': self.event_id,
-            'game_id': self.game_id,
-            'player_id': self.player_id,
-            'team_id': self.team_id,
-            'opponent_team_id': opponent_team_id,
-            'lineup_id': self.lineup_ids[self.team_id] if self.team_id != 0 else self.lineup_ids[team_ids[0]],
-            'opponent_lineup_id': self.lineup_ids[opponent_team_id],
-            'period': self.period,
-            'score': self.score,
-            'score_margin': self.margin,
-            'time': self.time,
-            'seconds_remaining': self.seconds_remaining,
-            'seconds_since_previous_event': self.seconds_since_previous_event,
-            'fouls_to_give': self.fouls_to_give,
-            'player_game_fouls': self.player_game_fouls,
-            'is_penalty_event': self.is_penalty_event,
-            'is_second_chance_event': self.is_second_chance_event
+            'opponentTeamId': opponent_team_id,
+            'lineupId': self.lineup_ids[self.team_id] if self.team_id != 0 else self.lineup_ids[team_ids[0]],
+            'opponentLineupId': self.lineup_ids[opponent_team_id],
+            'secondsSincePreviousEvent': self.seconds_since_previous_event,
+            'isSecondChanceEvent': self.is_second_chance_event,
+            'isPenaltyEvent': self.is_penalty_event
         }
         return data

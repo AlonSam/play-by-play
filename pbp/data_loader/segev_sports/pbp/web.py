@@ -53,7 +53,7 @@ class SegevPbpWebLoader(SegevWebLoader):
             else:
                 new_item['sub_type'] = f'{action_desc["freeThrowNumber"]}of{action_desc["freeThrowsAwarded"]}'
         elif action_type == "foul":
-            new_item['foulon'] = action_desc['fouledOn']
+            new_item['foul_on'] = action_desc['fouledOn']
             new_item['free_throw'] = action_desc['freeThrows'] == "1"
             if action_desc['kind'] == 'offensive':
                 new_item['sub_type'] = 'offensive'
@@ -67,7 +67,7 @@ class SegevPbpWebLoader(SegevWebLoader):
     @staticmethod
     def fix_actions(act):
         if act == "foul-drawn":
-            return "foulon"
+            return "foul_on"
         elif act == "freeThrow":
             return "freethrow"
         elif '-' in act:

@@ -1,45 +1,40 @@
+from typing import Optional
+
+from pydantic import Extra
+
 from pbp.resources.enhanced_pbp.segev_sports.enhanced_pbp_item import SegevEnhancedPbpItem
 from pbp.resources.enhanced_pbp.substitution import Substitution
 
 
-class SegevSubstitution(Substitution, SegevEnhancedPbpItem):
+class SegevSubstitution(Substitution, SegevEnhancedPbpItem, extra=Extra.allow):
     """
     class for Substitution Events
     """
-    def __init__(self, *args):
-        super().__init__(*args)
-
+    sub_in_player_id: Optional[int]
+    sub_out_player_id: Optional[int]
     @property
     def players_on_court(self):
         """
         returns dict with an updated list of player ids of each team
         """
         players = self.previous_event.players_on_court.copy()
-        if hasattr(self, 'sub_out_player_id'):
+        if hasattr(self, 'sub_out_player_id') and self.sub_out_player_id:
             players[self.team_id] = [self.sub_in_player_id if p == self.sub_out_player_id else p for p in players[self.team_id]]
+        self.validate_lineup(players[self.team_id])
         return players
+
+    def validate_lineup(self, players):
+        if len(players) != 5:
+            raise Exception('Lineup does not include 5 players')
+        if len(players) != len(set(players)):
+            raise Exception('Lineup has duplicates')
 
     @property
     def export_data(self):
-        team_ids = list(self.players_on_court.keys())
-        opponent_team_id = team_ids[0] if self.team_id == team_ids[1] else team_ids[1]
-        data = {
-            'team_id': self.team_id,
-            'opponent_team_id': opponent_team_id,
-            'lineup_id': self.lineup_ids[self.team_id],
-            'opponent_lineup_id': self.lineup_ids[opponent_team_id],
-            'quarter': self.period,
-            'score': self.score,
-            'score_margin': self.margin,
-            'time': self.time,
-            'seconds_remaining': self.seconds_remaining,
-            'seconds_since_previous_event': self.seconds_since_previous_event,
-            'fouls_to_give': self.fouls_to_give,
-            'player_game_fouls': self.player_game_fouls,
-            'is_penalty_event': self.is_penalty_event,
-            'is_second_chance_event': self.is_second_chance_event,
-            'action_type': 'Substitution',
-            'sub_in_player_id': self.sub_in_player_id,
-            'sub_out_player_id': self.sub_out_player_id if hasattr(self, 'sub_out_player_id') else None
-        }
+        data = self.dict(by_alias=True, exclude_none=True, exclude={'previous_event', 'next_event'})
+        data.update(self.base_data)
+        data.update({
+            'subInPlayerId': self.sub_in_player_id,
+            'subOutPlayerId': self.sub_out_player_id
+        })
         return data

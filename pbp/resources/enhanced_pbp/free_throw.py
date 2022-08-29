@@ -58,7 +58,3 @@ class FreeThrow(object):
         if 'of3' in self.sub_type:
             return 3
 
-    @property
-    def is_assisted(self):
-        return hasattr(self, 'assist_player_id')
-

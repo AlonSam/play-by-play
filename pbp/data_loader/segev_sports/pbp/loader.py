@@ -1,5 +1,3 @@
-from pprint import pprint
-
 from pymongo import MongoClient
 
 from pbp.data_loader.segev_sports.pbp.db import SegevPbpDBLoader
@@ -23,7 +21,6 @@ class SegevPbpLoader(object):
         self.game_id = game_id
         self.source = source
         self.source_data = self.source.load_data(self.game_id)
-        pprint(self.source_data)
         self._make_pbp_items()
 
     @classmethod

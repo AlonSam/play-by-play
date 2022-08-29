@@ -1,10 +1,10 @@
 import datetime
 from typing import List
 
-from pydantic import BaseModel
+from pbp.objects.my_base_model import MyBaseModel
 
 
-class SegevGameItem(BaseModel):
+class SegevGameItem(MyBaseModel):
     """
     class for game data from Segev Sports
 

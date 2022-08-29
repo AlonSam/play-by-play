@@ -1,19 +1,40 @@
+from typing import List, Optional
+
+from pydantic import Extra, root_validator, Field
+
 import pbp
+from pbp.objects.my_base_model import MyBaseModel
 from pbp.resources.enhanced_pbp import (FieldGoal, FreeThrow, Rebound, Substitution, Timeout, Turnover)
+from pbp.resources.enhanced_pbp.segev_sports.enhanced_pbp_item import SegevEnhancedPbpItem
 
 
-class Possession(object):
+class EmptyPossessionError(Exception):
+    pass
+
+
+class Possession(MyBaseModel):
     """
     Class for possessions
     :param list events: list of
         :obj:`~pbpstats.resources.enhanced_pbp.enhanced_pbp_item.EnhancedPbpItem` items for possession,
         typically from a possession data loader
     """
+    events: List[SegevEnhancedPbpItem]
+    game_id: Optional[int] = Field(alias='gameId')
+    period: Optional[int]
 
-    def __init__(self, events):
-        self.game_id = events[0].game_id
-        self.period = events[0].period
-        self.events = events
+    class Config:
+        extra = Extra.allow
+        allow_population_by_field_name = True
+
+    @root_validator
+    def add_game_id_and_period(cls, values):
+        if len(values['events']) == 0:
+            raise EmptyPossessionError('Possession has got no events')
+        else:
+            values['game_id'] = values['events'][0].game_id
+            values['period'] = values['events'][0].period
+        return values
 
     def __repr__(self):
         return (

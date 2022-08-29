@@ -26,11 +26,3 @@ class Rebound(object):
         returns True if rebound was grabbed by the same player who missed the shot, False otherwise
         """
         return self.player_id == self.missed_shot.player_id
-
-    @property
-    def is_defensive(self):
-        return self.sub_type == 'defensive'
-
-    @property
-    def is_offensive(self):
-        return self.sub_type == "offensive"

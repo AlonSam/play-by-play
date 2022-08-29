@@ -51,7 +51,7 @@ class SegevDetailsLoader(object):
 
     def _save_game_to_db(self):
         col = self.db.games
-        col.update_one({'_id': int(self.game_id), 'basket_id': int(self.basket_id)},
+        col.update_one({'_id': int(self.game_id), 'basketId': int(self.basket_id)},
                        {'$set': {'details': self.data}}, upsert=True)
 
     def _save_teams_to_db(self):
@@ -66,8 +66,8 @@ class SegevDetailsLoader(object):
         names = ['home', 'away']
         col = self.db.players
         for player in self.players:
-            col.update_one({'_id': player.id}, {'$set': {'name': player.name, 'hebrew_name': player.hebrew_name,
-                                                         'team_id': player.team_id, 'shirt_number': player.shirt_number},
+            col.update_one({'_id': player.id}, {'$set': {'name': player.name, 'hebrewName': player.hebrew_name,
+                                                         'teamId': player.team_id, 'shirtNumber': player.shirt_number},
                                                 '$addToSet': {'games': int(self.game_id)}}, upsert=True)
 
     def _make_game_item(self):

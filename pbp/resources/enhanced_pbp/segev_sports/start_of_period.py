@@ -15,8 +15,6 @@ class SegevStartOfPeriod(StartOfPeriod, SegevEnhancedPbpItem):
     """
     class for Start Of Period Events
     """
-    def __init__(self, event):
-        super().__init__(event)
 
     @property
     def players_on_court(self):
@@ -39,8 +37,9 @@ class SegevStartOfPeriod(StartOfPeriod, SegevEnhancedPbpItem):
         event = self.next_event
         while isinstance(event, Substitution):
             if event.team_id not in starters.keys():
-                starters[event.team_id] = []
-            if hasattr(event, 'sub_out_player_id'):
+                starters[event.team_id] = list()
+            if hasattr(event, 'sub_out_player_id') and event.sub_out_player_id\
+                    and event.sub_out_player_id in starters[event.team_id]:
                 starters[event.team_id].remove(event.sub_out_player_id)
             starters[event.team_id].append(event.sub_in_player_id)
             event = event.next_event
@@ -57,9 +56,6 @@ class SegevStartOfPeriod(StartOfPeriod, SegevEnhancedPbpItem):
 
     @property
     def export_data(self):
-        data = {
-            'action_type': 'StartOfPeriod',
-        }
-        base_data = self.base_data.copy()
-        base_data.update(data)
-        return base_data
+        data = self.dict(by_alias=True, exclude_none=True, exclude={'previous_event', 'next_event', 'period_starters'})
+        data.update(self.base_data)
+        return data

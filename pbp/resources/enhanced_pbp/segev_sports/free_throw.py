@@ -1,3 +1,7 @@
+from typing import Optional
+
+from pydantic import validator
+
 from pbp.resources.enhanced_pbp import FreeThrow
 from pbp.resources.enhanced_pbp.segev_sports.enhanced_pbp_item import SegevEnhancedPbpItem
 
@@ -6,22 +10,21 @@ class SegevFreeThrow(FreeThrow, SegevEnhancedPbpItem):
     """
     class for Free Throw Events
     """
-    def __init__(self, *args):
-        super().__init__(*args)
+    is_made: Optional[bool]
+    assist_player_id: Optional[int]
+    is_assisted: Optional[bool]
+    @validator('is_assisted', always=True)
+    def validate_is_assisted(cls, value, values):
+        return values['is_made'] and values['assist_player_id'] is not None
 
     @property
     def export_data(self):
-        data = {
-            'action_type': 'FreeThrow',
-            'is_made': self.is_made,
-            'type': self.sub_type,
-            'is_first_ft': self.is_first_ft,
-            'is_last_ft': self.is_end_ft,
-            'is_technical_ft': self.is_technical_ft,
-            'foul_that_led_to_ft_event_id': self.foul_that_led_to_ft.event_id,
-            'is_assisted': self.is_assisted,
-            'assist_player_id': self.assist_player_id if self.is_assisted else 0
-        }
-        base_data = self.base_data.copy()
-        base_data.update(data)
-        return base_data
+        data = self.dict(by_alias=True, exclude_none=True, exclude={'previous_event', 'next_event'})
+        data.update(self.base_data)
+        data.update({
+            'isFirstFt': self.is_first_ft,
+            'isLastFt': self.is_end_ft,
+            'isTechnicalFt': self.is_technical_ft,
+            'foulThatLedToFtEventId': self.foul_that_led_to_ft.event_id
+        })
+        return data

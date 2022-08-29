@@ -1,5 +1,3 @@
-import math
-
 import pbp
 
 
@@ -10,30 +8,9 @@ class FieldGoal(object):
     event_type = ['2pt', '3pt']
 
     @property
-    def is_blocked(self):
-        """
-        returns True is shot was blocked, False otherwise
-        """
-        pass
-
-    @property
-    def is_assisted(self):
-        """
-        returns True is shot was assisted, False otherwise
-        """
-        pass
-
-    @property
     def rebound(self):
         """
         returns True is shot was rebounded, False otherwise
-        """
-        pass
-
-    @property
-    def is_heave(self):
-        """
-        returns True is shot was a last second heave, False otherwise
         """
         pass
 
@@ -43,55 +20,6 @@ class FieldGoal(object):
         returns True is shot was a corner 3, False otherwise
         """
         pass
-
-    @property
-    def distance(self):
-        """
-        returns shot distance
-        """
-        if hasattr(self, 'x') and hasattr(self, 'y'):
-            x_squared = ((self.x - 5) * 2) ** 2
-            y_squared = (self.y - 50) ** 2
-            shot_distance = math.sqrt(x_squared + y_squared)
-            return round(shot_distance, 1)
-
-    @property
-    def shot_type(self):
-        """
-        returns shot type string ('AtRim', 'ShortMidRange', 'LongMidRange', 'Arc3' or 'Corner3')
-        """
-        if self.shot_value == 3:
-            if self.is_corner_3:
-                return pbp.CORNER_3_STRING
-            else:
-                return pbp.ARC_3_STRING
-        if self.distance:
-            if self.distance < pbp.AT_RIM_CUTOFF:
-                return pbp.AT_RIM_STRING
-            elif self.distance < pbp.SHORT_MID_RANGE_CUTOFF:
-                return pbp.SHORT_MID_RANGE_STRING
-            else:
-                return pbp.LONG_MID_RANGE_STRING
-        return pbp.UNKNOWN_SHOT_DISTANCE_STRING
-
-    @property
-    def is_putback(self):
-        """
-        returns True if shot is a 2pt attempt within 2 seconds of an
-        offensive rebound attempted by the same player who got the rebound
-        """
-        if self.is_assisted or self.shot_value == 3:
-            return False
-        prev_ev = self.previous_event
-        if not prev_ev:
-            return False
-        if not hasattr(prev_ev, "is_real_rebound"):
-            return False
-        if not prev_ev.is_real_rebound:
-            return False
-        in_time = prev_ev.seconds_remaining - self.seconds_remaining <= 2
-        return prev_ev.sub_type == 'offensive' and prev_ev.player == self.player and in_time
-
 
     @property
     def shot_data(self):

@@ -14,7 +14,7 @@ class SegevDetailsDBLoader(SegevDBLoader):
         self.col = db.games
 
     def load_data(self, game_id):
-        query = dict(_id=game_id)
+        query = dict(_id=int(game_id))
         self.source_data = dict(self.col.find_one(query, {'_id': 0, 'details': 1}))
         self.source_data = self.source_data['details']
         self.client.close()

@@ -1,12 +1,19 @@
+from typing import Optional
+
+from pydantic import validator
+
 from pbp.resources.enhanced_pbp import Foul
 from pbp.resources.enhanced_pbp.segev_sports.enhanced_pbp_item import SegevEnhancedPbpItem
 from pbp.resources.enhanced_pbp.turnover import Turnover
 
 
 class SegevTurnover(Turnover, SegevEnhancedPbpItem):
-    @property
-    def is_steal(self):
-        return hasattr(self, 'steal_player_id')
+    steal_player_id: Optional[int]
+    is_steal: Optional[bool]
+
+    @validator('is_steal', always=True)
+    def validate_is_steal(cls, value, values):
+        return values['steal_player_id'] is not None
 
     @property
     def is_bad_pass(self):
@@ -66,12 +73,6 @@ class SegevTurnover(Turnover, SegevEnhancedPbpItem):
 
     @property
     def export_data(self):
-        data = {
-            'action_type': 'Turnover',
-            'type': self.sub_type,
-            'is_steal': self.is_steal,
-            'steal_player_id': self.steal_player_id if self.is_steal else 0
-        }
-        base_data = self.base_data.copy()
-        base_data.update(data)
-        return base_data
+        data = self.dict(by_alias=True, exclude_none=True, exclude={'previous_event', 'next_event'})
+        data.update(self.base_data)
+        return data

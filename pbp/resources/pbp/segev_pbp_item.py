@@ -1,9 +1,9 @@
 from typing import Optional
 
-from pydantic import BaseModel
+from pbp.objects.my_base_model import MyBaseModel
 
 
-class SegevPbpItem(BaseModel):
+class SegevPbpItem(MyBaseModel):
     """
     class for PBP events from segev_sports
     """

@@ -1,31 +1,31 @@
 from typing import Optional
 
-from pydantic import BaseModel
+from pbp.objects.my_base_model import MyBaseModel
 
 
-class Shot(BaseModel):
+class Shot(MyBaseModel):
     made: int
     attempted: int
     pct: float
 
 
-class Rebound(BaseModel):
+class Rebound(MyBaseModel):
     treb: int
     dreb: int
     oreb: int
 
 
-class Foul(BaseModel):
+class Foul(MyBaseModel):
     made: int
     drawn: int
 
 
-class Block(BaseModel):
+class Block(MyBaseModel):
     made: int
     blocked: int
 
 
-class SegevBoxScoreItem(BaseModel):
+class SegevBoxScoreItem(MyBaseModel):
     """
     Class for boxscore items from Segev Sports
     """

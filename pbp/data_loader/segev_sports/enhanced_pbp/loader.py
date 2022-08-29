@@ -1,3 +1,5 @@
+from pprint import pprint
+
 from pbp.data_loader.enhanced_pbp_loader import EnhancedPbpLoader
 from pbp.data_loader.segev_sports.details.loader import SegevDetailsLoader
 from pbp.data_loader.segev_sports.pbp.loader import SegevPbpLoader
@@ -6,8 +8,8 @@ from pbp.resources.enhanced_pbp.segev_sports.enhanced_pbp_factory import SegevEn
 
 
 def _load_team_ids(game_id):
-    details = SegevDetailsLoader('db', game_id)
-    return details.data['home_id'], details.data['away_id']
+    details = SegevDetailsLoader.from_db(game_id)
+    return str(details.data['home_id']), str(details.data['away_id'])
 
 
 class SegevEnhancedPbpLoader(SegevPbpLoader, EnhancedPbpLoader):
@@ -19,14 +21,14 @@ class SegevEnhancedPbpLoader(SegevPbpLoader, EnhancedPbpLoader):
     resource = 'enhancedpbp'
     parent_object = 'Game'
 
-    def __init__(self, game_id, source='web'):
+    def __init__(self, game_id, source):
         super().__init__(game_id, source)
         self._make_enhanced_pbp_items()
 
     def _make_enhanced_pbp_items(self):
         self.factory = SegevEnhancedPbpFactory()
         self._combine_related_events()
-        self.items = [self.factory.get_event_class(item['action_type'])(item) for item in self.data]
+        self.items = [self.factory.get_event_class(item['action_type'])(**item) for item in self.data]
         self._add_extra_attrs_to_all_events()
 
     def _set_period_starters(self):
@@ -34,8 +36,9 @@ class SegevEnhancedPbpLoader(SegevPbpLoader, EnhancedPbpLoader):
             self.items[i].period_starters = self.items[i].get_period_starters()
 
     def _combine_related_events(self):
+        subs_to_remove = []
         for i, event in enumerate(self.items):
-            actions = {'turnover': 'steal', 'foul': 'foulon',
+            actions = {'turnover': 'steal', 'foul': 'foul_on',
                        '2pt': ['assist', 'block'], '3pt': ['assist', 'block'],
                        'freethrow': 'assist'}
             if event.action_type in actions:
@@ -58,25 +61,50 @@ class SegevEnhancedPbpLoader(SegevPbpLoader, EnhancedPbpLoader):
                                     setattr(ft, act, ev.player_id)
                         self.items.remove(ev)
             elif event.action_type == 'substitution':
-                if event.sub_type == 'in':
-                    if not (event.period == 1 and event.seconds_remaining == 600):
-                        self.event_within_5_seconds(event, i, 'out')
-                        if not hasattr(event, 'sub_out_player_id'):
-                            raise Exception('Substitution in has no related event')
+                if not hasattr(event, 'sub_type') or event in subs_to_remove:
+                    continue
+                if event.sub_type == 'in' and event.period == 1 and event.seconds_remaining == 600:
                     event.sub_in_player_id = event.player_id
-                else:
-                    self.event_within_5_seconds(event, i, 'in')
-                    if not hasattr(event, 'sub_in_player_id'):
-                        raise Exception('Substitution out has no related event')
-                    event.sub_out_player_id = event.player_id
-                delattr(event, 'player_id')
-                event.sub_type = ''
+                    continue
+                try:
+                    subs_to_remove += self.pair_subs_at_current_time(i)
+                except:
+                    pprint(event)
+                # related_sub = self.find_related_sub(i)
+                # if not related_sub:
+                #     raise Exception('Substitution has no related event')
+                # if event.player_id == related_sub.player_id:
+                #     subs_to_remove.append(event)
+                # elif event.sub_type == 'in':
+                #     event.sub_in_player_id = event.player_id
+                #     event.sub_out_player_id = related_sub.player_id
+                # else:
+                #     event.sub_out_player_id = event.player_id
+                #     event.sub_in_player_id = related_sub.player_id
+                # self.items.remove(related_sub)
+                # delattr(event, 'player_id')
+                # delattr(event, 'sub_type')
+        for sub in subs_to_remove:
+            self.items.remove(sub)
+
+    def _remove_redundant_substitutions(self):
+        events_to_remove = []
+        for i, event in enumerate(self.items):
+            if event.action_type == 'substitution':
+                events = self.get_upcoming_events_at_current_time(i)
+                for ev in events:
+                    if ev.action_type == 'substitution' and event.team_id == ev.team_id:
+                        if event.player_id == ev.player_id and ((event.sub_type == 'in' and ev.sub_type == 'out') or (event.sub_type == 'out' and ev.sub_type == 'in')):
+                            events_to_remove.append(event)
+                            events_to_remove.append(ev)
+        for event in events_to_remove:
+            self.items.remove(event)
 
     def _add_score_and_margin_to_all_events(self):
         self.home_id, self.away_id = _load_team_ids(self.game_id)
         score = {self.home_id: 0, self.away_id: 0}
         for i, event in enumerate(self.items):
-            if hasattr(event, 'score'):
+            if hasattr(event, 'score') and event.score:
                 away_score, home_score = event.score.split('-')
                 score[self.home_id] = int(home_score)
                 score[self.away_id] = int(away_score)
@@ -115,3 +143,7 @@ class SegevEnhancedPbpLoader(SegevPbpLoader, EnhancedPbpLoader):
         if id == int(self.home_id):
             return int(self.away_id)
         return int(self.home_id)
+
+    @property
+    def export_data(self):
+        return [item.export_data for item in self.items]

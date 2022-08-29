@@ -7,25 +7,23 @@ from pbp.data_loader.segev_sports.enhanced_pbp.loader import SegevEnhancedPbpLoa
 from pbp.resources.possessions.possession import Possession
 
 
-class SegevPossessionLoader(PossessionLoader):
+class SegevPossessionLoader(SegevEnhancedPbpLoader, PossessionLoader):
     client = MongoClient('localhost', 27017)
     db = client.PBP
     data_provider = 'segev_sports'
     resource = 'possessions'
     parent_object = 'Game'
 
-    def __init__(self, game_id, source='web'):
-        self.game_id = game_id
-        self.source = source
-        pbp_events = SegevEnhancedPbpLoader(game_id, source)
-        self.events = pbp_events.items
+    def __init__(self, game_id, source):
+        super().__init__(game_id, source)
+        self.events = self.items
         events_by_possession = self._split_events_by_possession()
-        self.items = [Possession(possession_events) for possession_events in events_by_possession]
+        self.items = [Possession(**dict(events=possession_events)) for possession_events in events_by_possession]
         self._add_extra_attrs_to_all_possessions()
         self._save_data_to_db()
 
     @property
-    def data(self):
+    def export_data(self):
         return [item.export_data for item in self.items]
 
     def _save_data_to_db(self):
@@ -37,7 +35,7 @@ class SegevPossessionLoader(PossessionLoader):
 
     def _save_data_to_db_by_game(self):
         col = self.db.games
-        col.update_one({'_id': int(self.game_id)}, {'$set': {'possessions': self.data}}, upsert=True)
+        col.update_one({'_id': int(self.game_id)}, {'$set': {'possessions': self.export_data}}, upsert=True)
 
     def _save_data_to_db_by_team(self, item):
         col = self.db.teams
@@ -70,4 +68,6 @@ class SegevPossessionLoader(PossessionLoader):
 
     def _save_data_to_file(self):
         with open('possessions.json', 'w') as outfile:
-            json.dump(self.data, outfile, indent=4)
+            json.dump(self.export_data, outfile, indent=4)
+
+poss_loader = SegevPossessionLoader.from_web('35335')

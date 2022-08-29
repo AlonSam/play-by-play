@@ -29,7 +29,3 @@ class SegevScheduleLoader(object):
     @property
     def data(self):
         return self.items
-
-
-schedule_loader = SegevScheduleLoader('2022', 'Regular Season', 'db')
-print(schedule_loader.data)
