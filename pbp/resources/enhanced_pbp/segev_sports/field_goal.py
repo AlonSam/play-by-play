@@ -128,4 +128,4 @@ class SegevFieldGoal(FieldGoal, SegevEnhancedPbpItem):
             'isAndOne': self.is_and_one,
             'reboundPlayerId': self.rebound.player_id if self.rebound else None
         })
-        return data
+        return {k: v for (k, v) in data.items() if v is not None}

@@ -1,5 +1,5 @@
-SEGEV_ACTIONS_BASE_URL = 'http://stats.segevstats.com/realtimestat_heb/get_team_action.php?game_id='
-SEGEV_SCORES_BASE_URL = 'http://stats.segevstats.com/realtimestat_heb/get_team_score.php?game_id='
+SEGEV_ACTIONS_BASE_URL = 'https://stats.segevstats.com/realtimestat_heb/get_team_action.php?game_id='
+SEGEV_SCORES_BASE_URL = 'https://stats.segevstats.com/realtimestat_heb/get_team_score.php?game_id='
 BASKET_GAME_DATA_BASE_URL = 'https://basket.co.il/pbp/json/json_game_data.asp?gameid='
 BASKET_TEAM_DATA_BY_GAME_BASE_URL = 'https://basket.co.il/pbp/json/json_teams_data_by_game.asp?GameId='
 FIBA_STRING = 'FIBA Live Stats'

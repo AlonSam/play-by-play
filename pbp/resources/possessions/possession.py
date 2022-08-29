@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from pydantic import Extra, root_validator, Field
+from pydantic import root_validator
 
 import pbp
 from pbp.objects.my_base_model import MyBaseModel
@@ -20,12 +20,11 @@ class Possession(MyBaseModel):
         typically from a possession data loader
     """
     events: List[SegevEnhancedPbpItem]
-    game_id: Optional[int] = Field(alias='gameId')
+    game_id: Optional[int]
     period: Optional[int]
+    possession_id: Optional[int]
 
-    class Config:
-        extra = Extra.allow
-        allow_population_by_field_name = True
+
 
     @root_validator
     def add_game_id_and_period(cls, values):
@@ -73,10 +72,10 @@ class Possession(MyBaseModel):
         """
         returns the score margin from the perspective of the team on offense when the possession started
         """
-        last_event = self.events[-1]
-        if last_event.team_id == last_event.offense_team_id:
-            return last_event.margin
-        return last_event.margin * -1
+        first_event = self.events[0]
+        if first_event.team_id == first_event.offense_team_id:
+            return first_event.margin
+        return first_event.margin * -1
 
     @property
     def score(self):
@@ -221,7 +220,6 @@ class Possession(MyBaseModel):
             if isinstance(self.previous_possession_ending_event, Rebound):
                 if self.previous_possession_ending_event.player_id != 0:
                     return self.previous_possession_ending_event.missed_shot.player_id
-        return 0
 
     @property
     def previous_possession_end_rebound_player_id(self):
@@ -232,7 +230,6 @@ class Possession(MyBaseModel):
         if self.previous_possession and not (self.possession_has_timeout or self.previous_possession_has_timeout):
             if isinstance(self.previous_possession_ending_event, Rebound):
                 return self.previous_possession_ending_event.player_id
-        return 0
 
     @property
     def previous_possession_end_steal_player_id(self):
@@ -244,7 +241,6 @@ class Possession(MyBaseModel):
             if isinstance(self.previous_possession_ending_event, Turnover):
                 if self.previous_possession_ending_event.is_steal:
                     return self.previous_possession_ending_event.steal_player_id
-        return 0
 
     @property
     def data(self):
@@ -252,27 +248,25 @@ class Possession(MyBaseModel):
 
     @property
     def export_data(self):
-
-        data = {
-            'possession_id': self.possession_id,
-            'game_id': self.game_id,
-            'quarter': self.period,
+        exclude = {'previous_possession', 'next_possession', 'events'}
+        data = self.dict(by_alias=True, exclude_none=True, exclude=exclude)
+        data.update({
             'events': [e.export_data for e in self.events],
-            'offense_team_id': self.offense_team_id,
-            'defense_team_id': self.defense_team_id,
-            'offense_lineup_id': self.offense_lineup_id,
-            'defense_lineup_id': self.defense_lineup_id,
-            'offense_lineup_changed': self.offense_lineup_changed_during_possession,
-            'defense_lineup_changed': self.defense_lineup_changed_during_possession,
-            'start_time': self.start_time,
-            'end_time': self.end_time,
+            'offenseTeamId': self.offense_team_id,
+            'defenseTeamId': self.defense_team_id,
+            'offenseLineupId': self.offense_lineup_id,
+            'defenseLineupId': self.defense_lineup_id,
+            'offenseLineupChanged': self.offense_lineup_changed_during_possession,
+            'defenseLineupChanged': self.defense_lineup_changed_during_possession,
+            'startTime': self.start_time,
+            'endTime': self.end_time,
             'duration': self.duration,
-            'start_score': self.score,
-            'start_score_margin': self.margin,
-            'has_timeout': self.possession_has_timeout,
-            'previous_possession_ending_event_id': self.previous_possession_ending_event.event_id if self.previous_possession else None,
-            'previous_possession_end_rebound_player_id': self.previous_possession_end_rebound_player_id,
-            'previous_possession_end_shooter_player_id': self.previous_possession_end_shooter_player_id,
-            'previous_possession_end_steal_player_id': self.previous_possession_end_steal_player_id
-        }
-        return data
+            'startScore': self.score,
+            'startScoreMargin': self.margin,
+            'hasTimeout': self.possession_has_timeout,
+            'previousPossessionEndingEventId': self.previous_possession_ending_event.event_id if self.previous_possession else None,
+            'previousPossessionEndReboundPlayerId': self.previous_possession_end_rebound_player_id,
+            'previousPossessionEndShooterPlayerId': self.previous_possession_end_shooter_player_id,
+            'previousPossessionEndStealPlayerId': self.previous_possession_end_steal_player_id
+        })
+        return {k: v for (k, v) in data.items() if v is not None}

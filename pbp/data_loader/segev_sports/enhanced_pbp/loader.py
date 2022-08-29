@@ -1,4 +1,4 @@
-from pprint import pprint
+from time import time
 
 from pbp.data_loader.enhanced_pbp_loader import EnhancedPbpLoader
 from pbp.data_loader.segev_sports.details.loader import SegevDetailsLoader
@@ -8,8 +8,8 @@ from pbp.resources.enhanced_pbp.segev_sports.enhanced_pbp_factory import SegevEn
 
 
 def _load_team_ids(game_id):
-    details = SegevDetailsLoader.from_db(game_id)
-    return str(details.data['home_id']), str(details.data['away_id'])
+    details = SegevDetailsLoader.from_db(game_id).item
+    return str(details.home_id), str(details.away_id)
 
 
 class SegevEnhancedPbpLoader(SegevPbpLoader, EnhancedPbpLoader):
@@ -27,9 +27,18 @@ class SegevEnhancedPbpLoader(SegevPbpLoader, EnhancedPbpLoader):
 
     def _make_enhanced_pbp_items(self):
         self.factory = SegevEnhancedPbpFactory()
+        start_time = time()
         self._combine_related_events()
+        elapsed_time = time() - start_time
+        print(f'Elapsed time to combine related events: {elapsed_time}')
+        start_time = time()
         self.items = [self.factory.get_event_class(item['action_type'])(**item) for item in self.data]
+        elapsed_time = time() - start_time
+        print(f'Elapsed time to initialize EnhancedPbpItems: {elapsed_time}')
+        start_time = time()
         self._add_extra_attrs_to_all_events()
+        elapsed_time = time() - start_time
+        print(f'Elapsed time to add attributes to all events: {elapsed_time}')
 
     def _set_period_starters(self):
         for i in self.start_period_indices:
@@ -69,36 +78,9 @@ class SegevEnhancedPbpLoader(SegevPbpLoader, EnhancedPbpLoader):
                 try:
                     subs_to_remove += self.pair_subs_at_current_time(i)
                 except:
-                    pprint(event)
-                # related_sub = self.find_related_sub(i)
-                # if not related_sub:
-                #     raise Exception('Substitution has no related event')
-                # if event.player_id == related_sub.player_id:
-                #     subs_to_remove.append(event)
-                # elif event.sub_type == 'in':
-                #     event.sub_in_player_id = event.player_id
-                #     event.sub_out_player_id = related_sub.player_id
-                # else:
-                #     event.sub_out_player_id = event.player_id
-                #     event.sub_in_player_id = related_sub.player_id
-                # self.items.remove(related_sub)
-                # delattr(event, 'player_id')
-                # delattr(event, 'sub_type')
+                    print(event)
         for sub in subs_to_remove:
             self.items.remove(sub)
-
-    def _remove_redundant_substitutions(self):
-        events_to_remove = []
-        for i, event in enumerate(self.items):
-            if event.action_type == 'substitution':
-                events = self.get_upcoming_events_at_current_time(i)
-                for ev in events:
-                    if ev.action_type == 'substitution' and event.team_id == ev.team_id:
-                        if event.player_id == ev.player_id and ((event.sub_type == 'in' and ev.sub_type == 'out') or (event.sub_type == 'out' and ev.sub_type == 'in')):
-                            events_to_remove.append(event)
-                            events_to_remove.append(ev)
-        for event in events_to_remove:
-            self.items.remove(event)
 
     def _add_score_and_margin_to_all_events(self):
         self.home_id, self.away_id = _load_team_ids(self.game_id)

@@ -3,7 +3,7 @@ from datetime import datetime
 import pbp
 from pbp.data_loader.segev_sports.details import *
 from pbp.data_loader.segev_sports.web_loader import SegevWebLoader
-from pbp.resources.players.segev_player_item import SegevPlayerItem
+from pbp.objects.player import Player
 
 
 class SegevDetailsWebLoader(SegevWebLoader):
@@ -45,8 +45,22 @@ class SegevDetailsWebLoader(SegevWebLoader):
         players = []
         for name in names:
             raw_players = self.source_data[f'{name}Team']['players']
-            players += [SegevPlayerItem(player, self.source_data[f'{name}Team']['id']) for player in raw_players]
+            team_id = self.source_data[f'{name}Team']['id']
+            for player in raw_players:
+                data = dict(id=player['id'],
+                            team_id=team_id,
+                            name=self.capitalize_name(player['firstName'], player['lastName']),
+                            hebrew_name=player['firstNameLocal'] + ' ' + player['lastNameLocal'],
+                            shirt_number=player['jerseyNumber'])
+                players.append(Player.parse_obj(data))
         return players
+
+    @staticmethod
+    def capitalize_name(first_name, last_name):
+        name = first_name.capitalize()
+        for n in last_name.split(' '):
+            name += ' ' + n.capitalize()
+        return name
 
     def fix_details(self, basket_data):
         new_item = basket_data

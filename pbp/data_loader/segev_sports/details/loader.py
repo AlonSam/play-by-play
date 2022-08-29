@@ -3,8 +3,8 @@ from pymongo import MongoClient
 from pbp.data_loader.segev_sports.details.db import SegevDetailsDBLoader
 from pbp.data_loader.segev_sports.details.web import SegevDetailsWebLoader
 from pbp.data_loader.segev_sports.web_loader import SegevWebLoader
+from pbp.objects.team import Team
 from pbp.resources.games.segev_game_item import SegevGameItem
-from pbp.resources.teams.segev_team_item import SegevTeamItem
 
 
 class SegevDetailsLoader(object):
@@ -56,14 +56,15 @@ class SegevDetailsLoader(object):
 
     def _save_teams_to_db(self):
         names = ['home', 'away']
-        teams = [SegevTeamItem(self.data[f'{name}_id'], self.data[f'{name}_team'], self.data['competition']) for name in names]
+        teams = [Team(id=self.data[f'{name}_id'], name=self.data[f'{name}_team'],
+                               competition=self.data['competition']) for name in names]
         col = self.db.teams
         for team in teams:
-            col.update_one({'_id': team.id}, {'$set': {'name': team.name, 'competitions': team.competitions},
-                                              '$addToSet': {'games': int(self.game_id)}}, upsert=True)
+            col.update_one({'_id': team.id}, {'$set': {'name': team.name},
+                                              '$addToSet': {'games': int(self.game_id),
+                                                            'competitions': team.competition}}, upsert=True)
 
     def _save_players_to_db(self):
-        names = ['home', 'away']
         col = self.db.players
         for player in self.players:
             col.update_one({'_id': player.id}, {'$set': {'name': player.name, 'hebrewName': player.hebrew_name,
@@ -76,3 +77,7 @@ class SegevDetailsLoader(object):
     @property
     def data(self):
         return self.item.dict()
+
+    @property
+    def export_data(self):
+        return self.item.dict(by_alias=True)

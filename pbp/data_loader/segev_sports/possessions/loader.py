@@ -1,9 +1,11 @@
 import json
+from time import time
 
 from pymongo import MongoClient
 
 from pbp.data_loader.possession_loader import PossessionLoader
 from pbp.data_loader.segev_sports.enhanced_pbp.loader import SegevEnhancedPbpLoader
+from pbp.objects.lineup import Lineup
 from pbp.resources.possessions.possession import Possession
 
 
@@ -18,9 +20,18 @@ class SegevPossessionLoader(SegevEnhancedPbpLoader, PossessionLoader):
         super().__init__(game_id, source)
         self.events = self.items
         events_by_possession = self._split_events_by_possession()
+        start_time = time()
         self.items = [Possession(**dict(events=possession_events)) for possession_events in events_by_possession]
+        elapsed_time = time() - start_time
+        print(f'Elapsed time to initialize Possessions: {elapsed_time}')
+        start_time = time()
         self._add_extra_attrs_to_all_possessions()
+        elapsed_time = time() - start_time
+        print(f'Elapsed time to add attributes to all possessions: {elapsed_time}')
+        start_time = time()
         self._save_data_to_db()
+        elapsed_time = time() - start_time
+        print(f'Elapsed time to save items to db: {elapsed_time}')
 
     @property
     def export_data(self):
@@ -49,25 +60,23 @@ class SegevPossessionLoader(SegevEnhancedPbpLoader, PossessionLoader):
         offense_lineup = item.offense_lineup_id.split('-')
         defense_lineup = item.defense_lineup_id.split('-')
         for player_id in offense_lineup:
-            col.update_one({'_id': int(player_id)}, {'$addToSet': {'possessions.offense': item.export_data}}, upsert=True)
+            col.update_one({'_id': int(player_id)}, {'$addToSet': {'possessions.offense': item.export_data}},
+                           upsert=True)
         for player_id in defense_lineup:
-            col.update_one({'_id': int(player_id)}, {'$addToSet': {'possessions.defense': item.export_data}}, upsert=True)
+            col.update_one({'_id': int(player_id)}, {'$addToSet': {'possessions.defense': item.export_data}},
+                           upsert=True)
 
     def _save_data_to_db_by_lineup(self, item):
         col = self.db.lineups
-        offense_lineup = [int(p) for p in item.offense_lineup_id.split('-')]
-        defense_lineup = [int(p) for p in item.defense_lineup_id.split('-')]
-        col.update_one({'_id': item.offense_lineup_id}, {'$addToSet': {'possessions.offense': item.export_data},
-                                                         '$set': {'player_ids': offense_lineup,
-                                                                  'team_id': item.offense_team_id}},
-                       upsert=True)
-        col.update_one({'_id': item.defense_lineup_id}, {'$addToSet': {'possessions.defense': item.export_data},
-                                                         '$set': {'player_ids': defense_lineup,
-                                                                  'team_id': item.defense_team_id}},
-                       upsert=True)
+        names = ['offense', 'defense']
+        for name in names:
+            lineup = Lineup(id=getattr(item, f'{name}_lineup_id'), team_id=getattr(item, f'{name}_team_id'))
+            col.update_one({'_id': lineup.id}, {'$addToSet': {'possessions.{name}': item.export_data,
+                                                              'games': int(self.game_id)},
+                                                '$set': {'player_ids': lineup.player_ids,
+                                                         'team_id': lineup.team_id}},
+                           upsert=True)
 
     def _save_data_to_file(self):
         with open('possessions.json', 'w') as outfile:
             json.dump(self.export_data, outfile, indent=4)
-
-poss_loader = SegevPossessionLoader.from_web('35335')
