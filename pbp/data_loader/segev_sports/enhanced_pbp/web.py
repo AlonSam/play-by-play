@@ -1,7 +1,10 @@
-from pbp.data_loader.segev_sports.pbp.web import SegevPbpWebLoader
+from pbp.data_loader.segev_sports.pbp.loader import SegevPbpLoader
+from pbp.data_loader.segev_sports.web_loader import SegevWebLoader
 
 
-class SegevEnhancedPbpWebLoader(SegevPbpWebLoader):
+class SegevEnhancedPbpWebLoader(SegevWebLoader):
     """
-    Base class for loading segev_sports enhanced pbp events from web.
+    TODO
     """
+    def load_data(self, game_id):
+        return SegevPbpLoader.from_web(game_id).items

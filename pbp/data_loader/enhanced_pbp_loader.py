@@ -122,21 +122,6 @@ class EnhancedPbpLoader(object):
                     break
             idx += 1
 
-    def find_related_sub(self, idx):
-        event = self.items[idx]
-        map_sub = {'in': 'out', 'out': 'in'}
-        events = self.get_upcoming_events_at_current_time(idx)
-        first_sub = None
-        for ev in events:
-            if ev.action_type != 'substitution' or (ev.action_type == 'substitution' and event.team_id != ev.team_id):
-                continue
-            if map_sub[event.sub_type] == ev.sub_type:
-                if event.player_id == ev.player_id:
-                    return ev
-                elif not first_sub:
-                    first_sub = ev
-        return first_sub
-
     def pair_subs_at_current_time(self, idx):
         event = self.items[idx]
         events = [event]

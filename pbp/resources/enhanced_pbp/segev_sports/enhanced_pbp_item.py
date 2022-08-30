@@ -1,4 +1,4 @@
-from typing import Optional, Dict
+from typing import Optional, Dict, Union
 
 from pbp.resources.enhanced_pbp import StartOfPeriod
 from pbp.resources.enhanced_pbp.enhanced_pbp_item import EnhancedPbpItem
@@ -18,7 +18,7 @@ class SegevEnhancedPbpItem(EnhancedPbpItem):
     period: int
     time: str
     seconds_remaining: int
-    score: Optional[str]
+    score: Optional[Union[str, dict]]
     is_fastbreak: Optional[bool]
     is_from_turnover: Optional[bool]
     is_second_chance: Optional[bool]

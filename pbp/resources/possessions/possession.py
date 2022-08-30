@@ -28,7 +28,7 @@ class Possession(MyBaseModel):
 
     @root_validator
     def add_game_id_and_period(cls, values):
-        if len(values['events']) == 0:
+        if 'events' in values and len(values['events']) == 0:
             raise EmptyPossessionError('Possession has got no events')
         else:
             values['game_id'] = values['events'][0].game_id

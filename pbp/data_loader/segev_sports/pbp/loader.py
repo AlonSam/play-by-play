@@ -2,7 +2,6 @@ from time import time
 
 from pymongo import MongoClient
 
-from pbp.data_loader.segev_sports.pbp.db import SegevPbpDBLoader
 from pbp.data_loader.segev_sports.pbp.web import SegevPbpWebLoader
 from pbp.resources.pbp.segev_pbp_item import SegevPbpItem
 
@@ -19,22 +18,17 @@ class SegevPbpLoader(object):
     resouce = 'pbp'
     parent_object = 'Game'
 
-    def __init__(self, game_id, source):
+    def __init__(self, game_id):
         start_time = time()
         self.game_id = game_id
-        self.source = source
-        self.source_data = self.source.load_data(self.game_id)
+        self.source_data = self._load_data()
         self._make_pbp_items()
         elapsed_time = time() - start_time
         print(f'Elapsed time to load Pbp Events: {elapsed_time}')
 
-    @classmethod
-    def from_web(cls, game_id):
-        return cls(game_id, SegevPbpWebLoader())
-
-    @classmethod
-    def from_db(cls, game_id):
-        return cls(game_id, SegevPbpDBLoader())
+    def _load_data(self):
+        loader = SegevPbpWebLoader()
+        return loader.load_data(self.game_id)
 
     def _make_pbp_items(self):
         self.items = [SegevPbpItem(**item) for item in self.source_data]
@@ -42,5 +36,5 @@ class SegevPbpLoader(object):
 
     @property
     def data(self):
-        return [item.dict() for item in self.items]
+        return [item.dict(by_alias=True) for item in self.items]
 

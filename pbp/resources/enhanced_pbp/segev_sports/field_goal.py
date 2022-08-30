@@ -122,7 +122,6 @@ class SegevFieldGoal(FieldGoal, SegevEnhancedPbpItem):
         data = self.dict(by_alias=True, exclude_none=True, exclude={'previous_event', 'next_event'})
         data.update(self.base_data)
         data.update({
-            'actionType': 'FieldGoal',
             'shotArea': self.shot_type,
             'isPutback': self.is_putback,
             'isAndOne': self.is_and_one,

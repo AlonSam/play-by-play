@@ -1,5 +1,3 @@
-from time import time
-
 from pbp.data_loader.enhanced_pbp_loader import EnhancedPbpLoader
 from pbp.data_loader.segev_sports.details.loader import SegevDetailsLoader
 from pbp.data_loader.segev_sports.pbp.loader import SegevPbpLoader
@@ -21,24 +19,16 @@ class SegevEnhancedPbpLoader(SegevPbpLoader, EnhancedPbpLoader):
     resource = 'enhancedpbp'
     parent_object = 'Game'
 
-    def __init__(self, game_id, source):
-        super().__init__(game_id, source)
+    def __init__(self, game_id):
+        super().__init__(game_id)
+        self.game_id = game_id
         self._make_enhanced_pbp_items()
 
     def _make_enhanced_pbp_items(self):
         self.factory = SegevEnhancedPbpFactory()
-        start_time = time()
         self._combine_related_events()
-        elapsed_time = time() - start_time
-        print(f'Elapsed time to combine related events: {elapsed_time}')
-        start_time = time()
         self.items = [self.factory.get_event_class(item['action_type'])(**item) for item in self.data]
-        elapsed_time = time() - start_time
-        print(f'Elapsed time to initialize EnhancedPbpItems: {elapsed_time}')
-        start_time = time()
         self._add_extra_attrs_to_all_events()
-        elapsed_time = time() - start_time
-        print(f'Elapsed time to add attributes to all events: {elapsed_time}')
 
     def _set_period_starters(self):
         for i in self.start_period_indices:
@@ -84,6 +74,8 @@ class SegevEnhancedPbpLoader(SegevPbpLoader, EnhancedPbpLoader):
 
     def _add_score_and_margin_to_all_events(self):
         self.home_id, self.away_id = _load_team_ids(self.game_id)
+        if self.items[0].score is not None and isinstance(self.items[0].score, dict):
+            return
         score = {self.home_id: 0, self.away_id: 0}
         for i, event in enumerate(self.items):
             if hasattr(event, 'score') and event.score:
@@ -91,7 +83,7 @@ class SegevEnhancedPbpLoader(SegevPbpLoader, EnhancedPbpLoader):
                 score[self.home_id] = int(home_score)
                 score[self.away_id] = int(away_score)
             event.score = score.copy()
-            if event.team_id == self.home_id or event.team_id == 0:
+            if event.offense_team_id == self.home_id or event.team_id == 0:
                 event.margin = event.score[self.home_id] - event.score[self.away_id]
             else:
                 event.margin = event.score[self.away_id] - event.score[self.home_id]
@@ -105,12 +97,13 @@ class SegevEnhancedPbpLoader(SegevPbpLoader, EnhancedPbpLoader):
 
     def get_offense_team_id(self, event):
         offensive_actions = (FieldGoal, FreeThrow, Turnover)
+        team_id = event.team_id
         if isinstance(event, offensive_actions):
-            offense_team_id = event.team_id
+            offense_team_id = team_id
         elif isinstance(event, Rebound):
-            offense_team_id = event.team_id if event.is_offensive else self.get_other_id(event.team_id)
+            offense_team_id = team_id if event.is_offensive else self.get_other_id(team_id)
         elif isinstance(event, Foul):
-            offense_team_id = event.team_id if event.is_offensive_foul else self.get_other_id(event.team_id)
+            offense_team_id = team_id if event.is_offensive_foul else self.get_other_id(team_id)
         else:
             offense_team_id = event.previous_event.offense_team_id
         return offense_team_id
@@ -125,6 +118,10 @@ class SegevEnhancedPbpLoader(SegevPbpLoader, EnhancedPbpLoader):
         if id == int(self.home_id):
             return int(self.away_id)
         return int(self.home_id)
+
+    @property
+    def data(self):
+        return [item if isinstance(item, dict) else item.dict() for item in self.items]
 
     @property
     def export_data(self):
