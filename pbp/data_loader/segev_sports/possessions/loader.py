@@ -1,69 +1,51 @@
+import inspect
 import json
+from typing import List, Type
 
-from pymongo import MongoClient
-
-from pbp.data_loader import SegevEnhancedPbpLoader
 from pbp.data_loader.possession_loader import PossessionLoader
-from pbp.objects.lineup import Lineup
-from pbp.resources.possessions.possession import Possession
+from pbp.models.events.event import Event
+from pbp.models.events.start_of_period import StartOfPeriodEvent
+from pbp.models.possession import Possession
+from pbp.resources.possessions.possession import PossessionItem
 
 
-class SegevPossessionLoader(PossessionLoader, SegevEnhancedPbpLoader):
-    client = MongoClient('localhost', 27017)
-    db = client.PBP
-    data_provider = 'segev_sports'
-    resource = 'possessions'
-    parent_object = 'Game'
+class SegevPossessionLoader(PossessionLoader):
 
-    def __init__(self, game_id):
-        super().__init__(game_id)
-        self.events = self.items
+    def __init__(self, events: List[Type[Event]]):
+        self.events = events
+        self.items = []
         events_by_possession = self._split_events_by_possession()
-        self.items = [Possession(**dict(events=possession_events)) for possession_events in events_by_possession]
-        self._add_extra_attrs_to_all_possessions()
-        self._save_data_to_db()
+        self.make_possession_items(events_by_possession)
+        bla = [possession for possession in self.items if not hasattr(possession, 'defense_lineup_id')]
+        self.possessions = [Possession(**self.get_attributes(item)) for item in self.items]
 
-    @property
-    def export_data(self):
-        return [item.export_data for item in self.items]
+    def make_possession_items(self, events_by_possession):
+        for i, possession_events in enumerate(events_by_possession):
+            possession = PossessionItem(possession_events)
+            possession.possession_id = f'{possession.game_id}{i + 1:03d}'
+            if i > 0:
+                previous_possession = self.items[i - 1]
+            period_start = any(isinstance(event, StartOfPeriodEvent) for event in possession.events)
+            if period_start or i == 0:
+                possession.previous_possession = None
+                possession.previous_possession_id = None
+                if i != 0:
+                    previous_possession.next_possession = None
+                    previous_possession.next_possession_id = None
+            else:
+                possession.previous_possession = previous_possession
+                possession.previous_possession_id = previous_possession.possession_id
+                previous_possession.next_possession = possession
+                previous_possession.next_possession_id = possession.possession_id
+                if i == len(events_by_possession) - 1:
+                    possession.next_possession = None
+                    possession.next_possession_id = None
+            self.items.append(possession)
 
-    def _save_data_to_db(self):
-        self._save_data_to_db_by_game()
-        for item in self.items:
-            self._save_data_to_db_by_team(item)
-            self._save_data_to_db_by_player(item)
-            self._save_data_to_db_by_lineup(item)
-
-    def _save_data_to_db_by_game(self):
-        col = self.db.games
-        col.update_one({'_id': int(self.game_id)}, {'$set': {'possessions': self.export_data}}, upsert=True)
-
-    def _save_data_to_db_by_team(self, item):
-        col = self.db.teams
-        offense_team_id = item.offense_team_id
-        defense_team_id = item.defense_team_id
-        col.update_one({'_id': offense_team_id}, {'$addToSet': {'possessions.offense': item.export_data}}, upsert=True)
-        col.update_one({'_id': defense_team_id}, {'$addToSet': {'possessions.defense': item.export_data}}, upsert=True)
-
-    def _save_data_to_db_by_player(self, item):
-        col = self.db.players
-        names = ['offense', 'defense']
-        for name in names:
-            lineup = Lineup(id=getattr(item, f'{name}_lineup_id'), team_id=getattr(item, f'{name}_team_id'))
-            for player in lineup.player_ids:
-                col.update_one({'_id': player}, {'$addToSet': {f'possessions.{name}': item.export_data}},
-                               upsert=True)
-
-    def _save_data_to_db_by_lineup(self, item):
-        col = self.db.lineups
-        names = ['offense', 'defense']
-        for name in names:
-            lineup = Lineup(id=getattr(item, f'{name}_lineup_id'), team_id=getattr(item, f'{name}_team_id'))
-            col.update_one({'_id': lineup.id}, {'$addToSet': {f'possessions.{name}': item.export_data,
-                                                              'games': int(self.game_id)},
-                                                '$set': {'player_ids': lineup.player_ids,
-                                                         'team_id': lineup.team_id}},
-                           upsert=True)
+    @staticmethod
+    def get_attributes(item):
+        attributes = dict(inspect.getmembers(item, lambda a: not (inspect.isroutine(a))))
+        return {k: v for (k, v) in attributes.items() if not (k.startswith('__') and k.endswith('__'))}
 
     def _save_data_to_file(self):
         with open('possessions.json', 'w') as outfile:

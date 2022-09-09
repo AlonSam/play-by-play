@@ -6,9 +6,5 @@ class SegevTimeout(Timeout, SegevEnhancedPbpItem):
     """
     class for Timeout Events
     """
-
-    @property
-    def export_data(self):
-        data = self.dict(by_alias=True, exclude_none=True, exclude={'previous_event', 'next_event'})
-        data.update(self.base_data)
-        return data
+    def __init__(self, *args):
+        super().__init__(*args)

@@ -1,5 +1,3 @@
-from typing import Optional, Dict, Union
-
 from pbp.resources.enhanced_pbp import StartOfPeriod
 from pbp.resources.enhanced_pbp.enhanced_pbp_item import EnhancedPbpItem
 
@@ -8,23 +6,17 @@ class SegevEnhancedPbpItem(EnhancedPbpItem):
     """
     Base class for enhanced pbp events from Segev Sports
     """
-    event_id: int
-    game_id: Optional[int]
-    parent_event_id: int
-    action_type: str
-    sub_type: Optional[str]
-    player_id: Optional[int]
-    team_id: int
-    period: int
-    time: str
-    seconds_remaining: int
-    score: Optional[Union[str, dict]]
-    is_fastbreak: Optional[bool]
-    is_from_turnover: Optional[bool]
-    is_second_chance: Optional[bool]
-    fouls_to_give: Optional[Dict]
-    player_game_fouls: Optional[Dict]
-    offense_team_id: Optional[int]
+    def __init__(self, event):
+        for key, value in event.dict().items():
+            if value is not None:
+                setattr(self, key, value)
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}(event_id={self.event_id}, action_type={self.action_type}, game_id={self.game_id}, period={self.period}' \
+               f', time={self.time}, team_id={self.team_id})'
+
+    def __str__(self):
+        return f'{self.action_type} ({self.sub_type})'
 
     @property
     def is_possession_ending_event(self):

@@ -1,17 +1,14 @@
-from typing import Optional
-
-from pydantic import Extra
-
 from pbp.resources.enhanced_pbp.segev_sports.enhanced_pbp_item import SegevEnhancedPbpItem
 from pbp.resources.enhanced_pbp.substitution import Substitution
 
 
-class SegevSubstitution(Substitution, SegevEnhancedPbpItem, extra=Extra.allow):
+class SegevSubstitution(Substitution, SegevEnhancedPbpItem):
     """
     class for Substitution Events
     """
-    sub_in_player_id: Optional[int]
-    sub_out_player_id: Optional[int]
+    def __init__(self, *args):
+        super().__init__(*args)
+
     @property
     def players_on_court(self):
         """
@@ -25,16 +22,7 @@ class SegevSubstitution(Substitution, SegevEnhancedPbpItem, extra=Extra.allow):
 
     def validate_lineup(self, players):
         if len(players) != 5:
+            print(self)
             raise Exception('Lineup does not include 5 players')
         if len(players) != len(set(players)):
             raise Exception('Lineup has duplicates')
-
-    @property
-    def export_data(self):
-        data = self.dict(by_alias=True, exclude_none=True, exclude={'previous_event', 'next_event'})
-        data.update(self.base_data)
-        data.update({
-            'subInPlayerId': self.sub_in_player_id,
-            'subOutPlayerId': self.sub_out_player_id
-        })
-        return data

@@ -1,9 +1,9 @@
+from typing import List
+
 from pymongo import MongoClient
 
-from pbp.data_loader.segev_sports.db_loader import SegevDBLoader
 
-
-class SegevScheduleDBLoader(SegevDBLoader):
+class SegevScheduleDBLoader(object):
     """
     Base class for loading segev_sports boxscores saved on database.
     This class should not be instantiated directly.
@@ -13,7 +13,7 @@ class SegevScheduleDBLoader(SegevDBLoader):
         db = self.client.PBP
         self.col = db.games
 
-    def load_data(self, season, phase):
+    def load_data(self, season: str, phase: str) -> List[str]:
         query = {'details.season': season, 'details.phase': phase}
         cursor = self.col.find(query, {'_id': 1})
         self.source_data = []

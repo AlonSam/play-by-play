@@ -1,4 +1,4 @@
-from time import time
+from typing import List, Dict
 
 from pymongo import MongoClient
 
@@ -14,17 +14,11 @@ class SegevPbpLoader(object):
     """
     client = MongoClient('localhost', 27017)
     db = client.PBP
-    data_provider = 'segev_sports'
-    resouce = 'pbp'
-    parent_object = 'Game'
 
-    def __init__(self, game_id):
-        start_time = time()
+    def __init__(self, game_id: str):
         self.game_id = game_id
         self.source_data = self._load_data()
         self._make_pbp_items()
-        elapsed_time = time() - start_time
-        print(f'Elapsed time to load Pbp Events: {elapsed_time}')
 
     def _load_data(self):
         loader = SegevPbpWebLoader()
@@ -35,6 +29,6 @@ class SegevPbpLoader(object):
         self.items.sort(key=lambda x: x.event_id)
 
     @property
-    def data(self):
+    def data(self) -> List[Dict]:
         return [item.dict(by_alias=True) for item in self.items]
 

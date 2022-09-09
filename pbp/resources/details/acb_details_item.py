@@ -12,7 +12,7 @@ rename_dict = {
 }
 
 
-class ACBGameItem(object):
+class ACBDetailsItem(object):
     """
     class for game data from ACB Spanish League
 

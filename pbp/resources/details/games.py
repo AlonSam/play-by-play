@@ -1,13 +1,13 @@
 from pbp.resources.base import Base
 
-class Games(Base):
+class Details(Base):
     """
     class for game items
 
     : param list items: list of either:
-        :obj SegevGameItem
-        :obj FibaGameItem
-        :obj ELGameItem
+        :obj SegevDetailsItem
+        :obj FibaDetailsItem
+        :obj ELDetailsItem
     """
     def __init__(self, items):
         self.items = items

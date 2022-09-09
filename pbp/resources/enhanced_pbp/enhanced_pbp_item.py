@@ -1,22 +1,22 @@
-import abc
+from abc import ABCMeta, abstractmethod
 
-from pbp.objects.my_base_model import MyBaseModel
-from pbp.resources.enhanced_pbp import FieldGoal, Foul, FreeThrow, Rebound
+from . import *
 
 
-class EnhancedPbpItem(MyBaseModel, metaclass=abc.ABCMeta):
+class EnhancedPbpItem(metaclass=ABCMeta):
     """
     An Abstract Class for all enhanced pbp event types
     """
 
-    @abc.abstractproperty
+    @property
+    @abstractmethod
     def is_possession_ending_event(self):
         """
         returns True if event ends a possession, False otherwise
         """
         pass
 
-    @abc.abstractmethod
+    @abstractmethod
     def get_all_related_events(self):
         """
         returns list of all directly related events to current event (FIBA & Segev Sports only)
@@ -71,10 +71,10 @@ class EnhancedPbpItem(MyBaseModel, metaclass=abc.ABCMeta):
         on the current possession, False otherwise
         """
         event = self.previous_event
-        if isinstance(event, Rebound) and event.sub_type == 'offensive':
+        if isinstance(event, Rebound) and event.sub_type == OFFENSIVE_STRING:
             return True
         while event and not event.is_possession_ending_event:
-            if isinstance(event, Rebound) and event.sub_type == 'offensive':
+            if isinstance(event, Rebound) and event.sub_type == OFFENSIVE_STRING:
                 return True
             event = event.previous_event
         return False
@@ -88,7 +88,7 @@ class EnhancedPbpItem(MyBaseModel, metaclass=abc.ABCMeta):
             team_ids = list(self.players_on_court.keys())
             offense_team_id = self.offense_team_id
             defense_team_id = (team_ids[0] if offense_team_id == team_ids[1] else team_ids[1])
-            if self.fouls_to_give[str(defense_team_id)] == 0:
+            if self.fouls_to_give[defense_team_id] == 0:
                 if isinstance(self, (Foul, FreeThrow, Rebound)):
                     if isinstance(self, Foul):
                         foul_event = self
@@ -101,7 +101,7 @@ class EnhancedPbpItem(MyBaseModel, metaclass=abc.ABCMeta):
                             return True
                     if not foul_event:
                         return True
-                    fouls_to_give_prior_to_foul = foul_event.previous_event.fouls_to_give[str(defense_team_id)]
+                    fouls_to_give_prior_to_foul = foul_event.previous_event.fouls_to_give[defense_team_id]
                     if fouls_to_give_prior_to_foul > 0:
                         return False
                 return True
@@ -139,7 +139,7 @@ class EnhancedPbpItem(MyBaseModel, metaclass=abc.ABCMeta):
         """
         lineup_ids = {}
         for team_id, team_players in self.players_on_court.items():
-            players = sorted([str(player_id) for player_id in team_players])
+            players = sorted([player_id for player_id in team_players])
             lineup_id = "-".join(players)
             lineup_ids[team_id] = lineup_id
         return lineup_ids
@@ -147,17 +147,3 @@ class EnhancedPbpItem(MyBaseModel, metaclass=abc.ABCMeta):
     @property
     def data(self):
         return self.__dict__
-
-    @property
-    def base_data(self):
-        team_ids = list(self.players_on_court.keys())
-        opponent_team_id = team_ids[0] if self.team_id == team_ids[1] else team_ids[1]
-        data = {
-            'opponentTeamId': opponent_team_id,
-            'lineupId': self.lineup_ids[self.team_id] if self.team_id != 0 else self.lineup_ids[team_ids[0]],
-            'opponentLineupId': self.lineup_ids[opponent_team_id],
-            'secondsSincePreviousEvent': self.seconds_since_previous_event,
-            'isSecondChanceEvent': self.is_second_chance_event,
-            'isPenaltyEvent': self.is_penalty_event
-        }
-        return data

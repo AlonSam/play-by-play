@@ -1,16 +1,7 @@
+from typing import Type
+
 import pbp.resources.enhanced_pbp.segev_sports as event_types
 from pbp.resources.enhanced_pbp.segev_sports.enhanced_pbp_item import SegevEnhancedPbpItem
-
-action_to_event = {
-    'startofquarter': 'StartOfPeriod',
-    'startofgame': 'StartOfPeriod',
-    'endofquarter': 'EndOfPeriod',
-    'endofgame': 'EndOfPeriod',
-    '2pt': 'FieldGoal',
-    '3pt': 'FieldGoal',
-    'freethrow': 'FreeThrow',
-    'jumpball': 'JumpBall',
-}
 
 
 class SegevEnhancedPbpFactory(object):
@@ -22,7 +13,7 @@ class SegevEnhancedPbpFactory(object):
         self.event_classes = {}
         self._load_event_classes()
 
-    def _load_event_classes(self):
+    def _load_event_classes(self) -> None:
         event_classes = dict([
             (name, cls) for name, cls in event_types.__dict__.items() if isinstance(cls, type)
         ])
@@ -33,7 +24,7 @@ class SegevEnhancedPbpFactory(object):
             else:
                 self.event_classes[event_cls.event_type] = event_cls
 
-    def get_event_class(self, event_type):
+    def get_event_class(self, event_type: str) -> Type[SegevEnhancedPbpItem]:
         """
         Gets the class for the event based on the event_type
         :param str event_type: event action type for the event

@@ -1,3 +1,5 @@
+from typing import List, Dict
+
 import pbp
 from pbp.data_loader.segev_sports.web_loader import SegevWebLoader
 
@@ -7,14 +9,14 @@ class SegevPbpWebLoader(SegevWebLoader):
     Base class for loading segev_sports pbp events from web.
     """
 
-    def load_data(self, game_id):
+    def load_data(self, game_id: str) -> List[Dict]:
         self.base_url = pbp.SEGEV_ACTIONS_BASE_URL + game_id
         self.source_data = self._load_request_data()
         self.source_data = self.source_data['result']['actions']
         not_imp = ['clock', 'game']
         return [self.fix_event(ev) for ev in self.source_data if ev['type'] not in not_imp]
 
-    def fix_event(self, ev):
+    def fix_event(self, ev: Dict) -> Dict:
         action_desc = ev['parameters']
         action_type = self.fix_actions(ev['type'])
         new_item = {
@@ -60,12 +62,12 @@ class SegevPbpWebLoader(SegevWebLoader):
         return new_item
 
     @staticmethod
-    def cal_sec_remaining(clock):
+    def cal_sec_remaining(clock: str) -> int:
         min, sec = clock.split(':')
         return int(min) * 60 + int(sec)
 
     @staticmethod
-    def fix_actions(act):
+    def fix_actions(act: str) -> str:
         if act == "foul-drawn":
             return "foul_on"
         elif act == "freeThrow":
@@ -77,7 +79,7 @@ class SegevPbpWebLoader(SegevWebLoader):
         return act
 
     @staticmethod
-    def fix_coords(sh):
+    def fix_coords(sh: Dict) -> Dict:
         sh['x'] -= 70
         if sh['y'] < 500:
             if sh['shot_value'] == 3:

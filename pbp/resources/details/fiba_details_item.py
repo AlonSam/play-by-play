@@ -1,4 +1,4 @@
-class FibaGameItem(object):
+class FibaDetailsItem(object):
     """
     class for game data from Segev Sports
 

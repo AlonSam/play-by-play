@@ -28,7 +28,7 @@ class SegevDetailsWebLoader(SegevWebLoader):
         base_data = base_data[0]['games'][0]
         basket_data = {
             'basket_id': base_data['id'],
-            'game_id': int(base_data['ExternalID']),
+            'game_id': base_data['ExternalID'],
             'season': str(base_data['game_year']),
             'phase': PHASES[str(base_data['game_type'])],
             'round': base_data['GN'],

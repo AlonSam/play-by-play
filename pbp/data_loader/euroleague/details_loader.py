@@ -2,7 +2,7 @@ import json
 import os
 
 from file_loader import ELFileLoader
-from pbp.resources.games.el_game_item import ELGameItem
+from pbp.resources.details.el_details_item import ELGameItem
 from web_loader import ELWebLoader
 
 

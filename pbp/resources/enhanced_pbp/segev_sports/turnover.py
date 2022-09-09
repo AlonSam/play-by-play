@@ -1,78 +1,69 @@
-from typing import Optional
-
-from pydantic import validator
-
+import pbp.resources.enhanced_pbp as e
 from pbp.resources.enhanced_pbp import Foul
 from pbp.resources.enhanced_pbp.segev_sports.enhanced_pbp_item import SegevEnhancedPbpItem
 from pbp.resources.enhanced_pbp.turnover import Turnover
 
 
 class SegevTurnover(Turnover, SegevEnhancedPbpItem):
-    steal_player_id: Optional[int]
-    is_steal: Optional[bool]
-
-    @validator('is_steal', always=True)
-    def validate_is_steal(cls, value, values):
-        return values['steal_player_id'] is not None
+    def __init__(self, *args):
+        super().__init__(*args)
 
     @property
-    def is_bad_pass(self):
-        return self.sub_type == 'badpass'
+    def is_steal(self) -> bool:
+        return hasattr(self, e.STEAL_ID_STRING)
 
     @property
-    def is_ball_handling(self):
-        return self.sub_type == 'ballhandling'
+    def is_bad_pass(self) -> bool:
+        return self.sub_type == e.BAD_PASS_STRING
 
     @property
-    def is_travel(self):
-        return self.sub_type == 'travel'
+    def is_ball_handling(self) -> bool:
+        return self.sub_type == e.BALL_HANDLING_STRING
 
     @property
-    def is_shot_clock_violation(self):
-        return self.sub_type == '24sec'
+    def is_travel(self) -> bool:
+        return self.sub_type == e.TRAVEL_STRING
 
     @property
-    def is_offensive_goaltending(self):
-        return self.sub_type == 'offensivegoaltending'
+    def is_shot_clock_violation(self) -> bool:
+        return self.sub_type == e.TWENTY_FOUR_SECOND_STRING
 
     @property
-    def is_lane_violation(self):
-        return self.sub_type == 'laneviolation'
+    def is_offensive_goaltending(self) -> bool:
+        return self.sub_type == e.OFFENSIVE_GOALTENDING_STRING
 
     @property
-    def is_3_second_violation(self):
-        return self.sub_type == '3sec'
+    def is_lane_violation(self) -> bool:
+        return self.sub_type == e.LANE_VIOLATION_STRING
 
     @property
-    def is_5_second_violation(self):
-        return self.sub_type == '5sec'
+    def is_3_second_violation(self) -> bool:
+        return self.sub_type == e.THREE_SECOND_STRING
 
     @property
-    def is_8_second_violation(self):
-        return self.sub_type == '8sec'
+    def is_5_second_violation(self) -> bool:
+        return self.sub_type == e.FIVE_SECOND_STRING
 
     @property
-    def is_out_of_bounds(self):
-        return self.sub_type == 'outofbounds'
+    def is_8_second_violation(self) -> bool:
+        return self.sub_type == e.EIGHT_SECOND_STRING
 
     @property
-    def is_offensive_foul(self):
-        return self.sub_type == 'other' and isinstance(self.previous_event, Foul) and self.previous_event.is_offensive_foul
+    def is_out_of_bounds(self) -> bool:
+        return self.sub_type == e.OUT_OF_BOUNDS_STRING
 
     @property
-    def is_backcourt_violation(self):
-        return self.sub_type == 'backcourt'
+    def is_offensive_foul(self) -> bool:
+        return self.sub_type == e.OTHER_STRING and isinstance(self.previous_event, Foul) and self.previous_event.is_offensive_foul
 
     @property
-    def is_double_dribble(self):
-        return self.sub_type == 'doubledribble'
+    def is_backcourt_violation(self) -> bool:
+        return self.sub_type == e.BACKCOURT_STRING
 
     @property
-    def is_unknown(self):
-        return self.sub_type == 'other' and not self.is_offensive_foul
+    def is_double_dribble(self) -> bool:
+        return self.sub_type == e.DOUBLE_DRIBBLE_STRING
 
     @property
-    def export_data(self):
-        data = self.dict(by_alias=True, exclude_none=True, exclude={'previous_event', 'next_event'})
-        data.update(self.base_data)
-        return data
+    def is_unknown(self) -> bool:
+        return self.sub_type == e.OTHER_STRING and not self.is_offensive_foul

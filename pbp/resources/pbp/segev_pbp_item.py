@@ -7,12 +7,12 @@ class SegevPbpItem(MyBaseModel):
     """
     class for PBP events from segev_sports
     """
-    event_id: int
-    parent_event_id: int
+    event_id: str
+    parent_event_id: str
     action_type: str
     sub_type: Optional[str]
-    player_id: int
-    team_id: int
+    player_id: str
+    team_id: str
     period: int
     time: str
     seconds_remaining: int

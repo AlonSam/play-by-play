@@ -2,7 +2,7 @@ import json
 import os
 
 from file_loader import ACBFileLoader
-from pbp.resources.games.acb_game_item import ACBGameItem
+from pbp.resources.details.acb_details_item import ACBGameItem
 from web_loader import ACBWebLoader
 
 

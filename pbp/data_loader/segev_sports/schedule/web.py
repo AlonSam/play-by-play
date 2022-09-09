@@ -1,5 +1,6 @@
 import re
 import time
+from typing import List
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -20,7 +21,7 @@ class SegevScheduleWebLoader(SegevWebLoader):
     This class should not be instantiated directly.
     """
 
-    def load_data(self, season, phase):
+    def load_data(self, season: str, phase: str) -> List[str]:
         options = webdriver.ChromeOptions()
         options.add_argument('headless')
         browser = webdriver.Chrome(options=options)

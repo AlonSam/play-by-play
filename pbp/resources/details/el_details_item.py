@@ -13,7 +13,7 @@ rename_dict = {
 }
 
 
-class ELGameItem(object):
+class ELDetailsItem(object):
     """
     class for game data from Euroleague
 

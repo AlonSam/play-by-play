@@ -1,18 +1,19 @@
-import inspect
+from typing import List, Dict
 
-import pbp.client as client
+from pydantic import Field
 
-
-class Game(object):
-    """
-    Class for loading resource data from data loaders with a parent_object of 'Game'
-    :param str game_id: Game ID - dependent on resource
-    """
-
-    def __init__(self, game_id):
-        self.game_id = game_id
-        attributes = inspect.getmembers(self, lambda a: not (inspect.isroutine(a)))
-        data_loaders = [a for a in attributes if a[0].endswith(client.DATA_LOADER_SUFFIX)]
+from pbp.objects.my_base_model import MyBaseModel
+from pbp.resources.boxscore.segev_boxscore_item import SegevBoxScoreItem
+from pbp.resources.details.segev_details_item import SegevDetailsItem
 
 
-game = Game('59159')
+class Game(MyBaseModel):
+    game_id: str = Field(alias='_id')
+    basket_id: str
+    details: SegevDetailsItem
+    boxscore: List[SegevBoxScoreItem]
+    possessions: List[str]
+
+    @property
+    def data(self) -> Dict:
+        return self.dict(by_alias=True)

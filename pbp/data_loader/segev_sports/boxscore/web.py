@@ -1,4 +1,5 @@
 import json
+from typing import List, Dict
 
 import pbp
 from pbp.data_loader.segev_sports.web_loader import SegevWebLoader
@@ -10,13 +11,13 @@ class SegevBoxScoreWebLoader(SegevWebLoader):
     This class should not be instantiated directly.
     """
 
-    def load_data(self, game_id):
+    def load_data(self, game_id: str) -> List[Dict]:
         self.base_url = pbp.SEGEV_SCORES_BASE_URL + game_id
         self.source_data = self._load_request_data()
         self.source_data = self._get_items(game_id)
         return self.source_data
 
-    def _get_items(self, game_id):
+    def _get_items(self, game_id: str) -> List[Dict]:
         source_data = self.source_data['result']['boxscore']
         source_data = add_team_and_game_ids(source_data, game_id)
         teams = ['home', 'away']
@@ -31,8 +32,7 @@ class SegevBoxScoreWebLoader(SegevWebLoader):
         return self.source_data
 
 
-
-def _fix_item(item):
+def _fix_item(item: Dict) -> Dict:
     item = fix_keys(item)
     item = {k: int(v) if isinstance(v, str) and v.isnumeric() else v for k, v in item.items()}
     item['treb'] = item['oreb'] + item['dreb']
@@ -59,20 +59,20 @@ def _fix_item(item):
     return new_item
 
 
-def fix_keys(item):
-    with open('rename.json') as json_data:
+def fix_keys(item: Dict) -> Dict:
+    with open("./data_loader/segev_sports/boxscore/rename.json") as json_data:
         rename_dict = json.load(json_data)
     item = {rename_dict[k] if k in rename_dict else k: v for k, v in item.items()}
     return item
 
 
-def cal_pct(made, attempted):
+def cal_pct(made: int, attempted: int) -> float:
     if attempted != 0:
         return round(made / attempted, 2)
     return 0
 
 
-def add_team_and_game_ids(source_data, game_id):
+def add_team_and_game_ids(source_data: List[Dict], game_id: str) -> List[Dict]:
     teams = ['home', 'away']
     for side in teams:
         team_id = source_data['gameInfo'][f'{side}TeamId']

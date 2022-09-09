@@ -1,5 +1,3 @@
-from typing import Optional
-
 from pbp.objects.my_base_model import MyBaseModel
 
 
@@ -29,12 +27,12 @@ class SegevBoxScoreItem(MyBaseModel):
     """
     Class for boxscore items from Segev Sports
     """
-    player_id: int
-    team_id: int
-    game_id: int
+    player_id: str
+    team_id: str
+    game_id: str
     pts: int
-    min: Optional[str]
-    starter: Optional[bool]
+    min: str = None
+    starter: bool = None
     fg: Shot
     two_pt: Shot
     three_pt: Shot
@@ -48,7 +46,11 @@ class SegevBoxScoreItem(MyBaseModel):
     fbpts: int
     scpts: int
     dunk: int
-    pm: Optional[int]
+    pm: int = None
     pir: int
+
+    @property
+    def data(self):
+        return self.dict(by_alias=True, exclude_none=True)
 
 

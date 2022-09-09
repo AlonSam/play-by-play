@@ -7,7 +7,7 @@ from selenium import webdriver
 
 from pbp.data_loader.fiba.file_loader import FibaFileLoader
 from pbp.data_loader.fiba.web_loader import FibaWebLoader
-from pbp.resources.games.fiba_game_item import FibaGameItem
+from pbp.resources.details.fiba_details_item import FibaGameItem
 
 options = webdriver.ChromeOptions()
 options.add_argument('headless')

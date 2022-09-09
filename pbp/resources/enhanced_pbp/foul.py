@@ -1,4 +1,5 @@
 import pbp
+import pbp.resources.enhanced_pbp as e
 
 
 class Foul(object):
@@ -6,30 +7,29 @@ class Foul(object):
     class for foul events
     """
     event_type = 'foul'
-
     @property
     def is_personal_foul(self):
-        return self.sub_type == 'personal'
+        return self.sub_type == e.PERSONAL_STRING
 
     @property
     def is_shooting_foul(self):
-        return self.sub_type == 'shooting' or self.sub_type == 'and_one'
+        return self.sub_type == e.SHOOTING_STRING or self.sub_type == e.AND_ONE_STRING
 
     @property
     def is_offensive_foul(self):
-        return self.sub_type == 'offensive'
+        return self.sub_type == e.OFFENSIVE_STRING
 
     @property
     def is_and_one_foul(self):
-        return self.sub_type == 'and_one'
+        return self.sub_type == e.AND_ONE_STRING
 
     @property
     def is_technical(self):
-        return self.sub_type == 'technical'
+        return self.sub_type == e.TECHNICAL_STRING
 
     @property
     def is_unsportsmanlike_foul(self):
-        return self.sub_type == 'unsportsmanlike'
+        return self.sub_type == e.UNSPORTSMANLIKE_STRING
 
     @property
     def counts_towards_penalty(self):

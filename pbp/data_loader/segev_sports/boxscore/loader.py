@@ -1,6 +1,7 @@
+from typing import List, Dict
+
 from pymongo import MongoClient
 
-from pbp.data_loader.segev_sports.boxscore.db import SegevBoxScoreDBLoader
 from pbp.data_loader.segev_sports.boxscore.web import SegevBoxScoreWebLoader
 from pbp.resources.boxscore.segev_boxscore_item import SegevBoxScoreItem
 
@@ -14,28 +15,20 @@ class SegevBoxScoreLoader(object):
         """
     client = MongoClient('localhost', 27017)
     db = client.PBP
-    data_provider = 'segev_sports'
-    resource = 'boxscore'
-    parent_object = 'Game'
 
-    def __init__(self, game_id, source):
+    def __init__(self, game_id: str):
         self.game_id = game_id
-        self.source = source
-        self.source_data = self.source.load_data(self.game_id)
+        self.source_data = self.load_data()
         self._make_boxscore_items()
-        self._save_data_to_db()
+        # self._save_data_to_db()
         self.client.close()
 
     def _make_boxscore_items(self):
         self.items = [SegevBoxScoreItem(**item) for item in self.source_data]
 
-    @classmethod
-    def from_web(cls, game_id):
-        return cls(game_id, SegevBoxScoreWebLoader())
-
-    @classmethod
-    def from_db(cls, game_id):
-        return cls(game_id, SegevBoxScoreDBLoader())
+    def load_data(self):
+        loader = SegevBoxScoreWebLoader()
+        return loader.load_data(self.game_id)
 
     def _save_data_to_db(self):
         self._save_data_by_game()
@@ -47,7 +40,7 @@ class SegevBoxScoreLoader(object):
 
     def _save_data_by_game(self):
         col = self.db.games
-        col.update_one({'_id': int(self.game_id)}, {'$set': {'boxscore': self.data}}, upsert=True)
+        col.update_one({'_id': self.game_id}, {'$set': {'boxscore': self.data}}, upsert=True)
 
     def _save_data_by_team(self, item):
         col = self.db.teams
@@ -60,5 +53,5 @@ class SegevBoxScoreLoader(object):
         col.update_one(query, {'$addToSet': {'boxscores': item.dict()}}, upsert=True)
 
     @property
-    def data(self):
+    def data(self) -> List[Dict]:
         return [item.dict() for item in self.items]

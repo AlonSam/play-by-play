@@ -33,7 +33,7 @@ class FreeThrow(object):
 
     @property
     def is_first_ft(self):
-        return '1of' in self.sub_type or self.is_ft_1_of_1 or self.is_ft_1_of_2 or self.is_ft_1_of_3
+        return self.is_ft_1_of_1 or self.is_ft_1_of_2 or self.is_ft_1_of_3 or '1of' in self.sub_type
 
     @property
     def is_technical_ft(self):
@@ -47,9 +47,14 @@ class FreeThrow(object):
         return event
 
     @property
+    def foul_that_led_to_ft_event_id(self):
+        return self.foul_that_led_to_ft.event_id
+
+    @property
     def is_end_ft(self):
         return self.is_ft_1_of_1 or self.is_ft_2_of_2 or self.is_ft_3_of_3
 
+    @property
     def num_ft_for_trip(self):
         if 'of1' in self.sub_type:
             return 1
