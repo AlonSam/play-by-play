@@ -1,9 +1,9 @@
 from pydantic import validator
 
-from .event import Event
+from .event_model import EventModel
 
 
-class FoulEvent(Event):
+class FoulEventModel(EventModel):
     free_throw: bool
     foul_on_player_id: str = None
     is_offensive_foul: bool

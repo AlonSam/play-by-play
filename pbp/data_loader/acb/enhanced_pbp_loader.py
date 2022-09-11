@@ -1,8 +1,8 @@
 from pbp.data_loader.acb.pbp_loader import ACBPbpLoader
-from pbp.data_loader.enhanced_pbp_loader import EnhancedPbpLoader
+from pbp.data_loader.event_loader import EventLoader
 
 
-class ACBEnhancedPbpLoader(ACBPbpLoader, EnhancedPbpLoader):
+class ACBEnhancedPbpLoader(ACBPbpLoader, EventLoader):
     """
     Loads ACB Spanish League enhanced pbp data for game.
     """

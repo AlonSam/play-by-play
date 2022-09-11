@@ -1,5 +1,5 @@
-from .event import Event
+from .event_model import EventModel
 
 
-class DeflectionEvent(Event):
-    pass
+class DeflectionEventModel(EventModel):
+    sub_type: str = None

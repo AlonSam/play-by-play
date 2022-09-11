@@ -1,7 +1,7 @@
-from .event import Event
+from .event_model import EventModel
 
 
-class TurnoverEvent(Event):
+class TurnoverEventModel(EventModel):
     is_steal: bool
     steal_player_id: str = None
     is_3_second_violation: bool

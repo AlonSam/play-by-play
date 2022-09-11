@@ -1,7 +1,7 @@
-from .event import Event
+from .event_model import EventModel
 
 
-class ReboundEvent(Event):
+class ReboundEventModel(EventModel):
     is_defensive: bool
     is_offensive: bool
     missed_shot_event_id: str

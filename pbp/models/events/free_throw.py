@@ -1,7 +1,7 @@
-from .event import Event
+from .event_model import EventModel
 
 
-class FreeThrowEvent(Event):
+class FreeThrowEventModel(EventModel):
     is_made: bool
     is_first_ft: bool
     is_end_ft: bool

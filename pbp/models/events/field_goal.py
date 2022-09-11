@@ -1,7 +1,7 @@
-from .event import Event
+from .event_model import EventModel
 
 
-class FieldGoalEvent(Event):
+class FieldGoalEventModel(EventModel):
     is_made: bool
     x: float
     y: float

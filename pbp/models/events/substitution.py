@@ -1,6 +1,6 @@
-from .event import Event
+from .event_model import EventModel
 
-class SubstitutionEvent(Event):
+class SubstitutionEventModel(EventModel):
     player_id: str = None
     sub_type: str = None
     sub_in_player_id: str

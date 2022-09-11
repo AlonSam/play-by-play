@@ -1,5 +1,5 @@
-from .event import Event
+from .event_model import EventModel
 
 
-class TimeoutEvent(Event):
+class TimeoutEventModel(EventModel):
     sub_type: str = None

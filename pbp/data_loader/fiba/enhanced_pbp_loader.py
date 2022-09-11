@@ -1,8 +1,8 @@
-from pbp.data_loader.enhanced_pbp_loader import EnhancedPbpLoader
+from pbp.data_loader.event_loader import EventLoader
 from pbp.data_loader.fiba.pbp_loader import FibaPbpLoader
 
 
-class FibaEnhancedPbpLoader(FibaPbpLoader, EnhancedPbpLoader):
+class FibaEnhancedPbpLoader(FibaPbpLoader, EventLoader):
     """
     Loads FIBA Live Stats enhanced pbp data for game.
     """

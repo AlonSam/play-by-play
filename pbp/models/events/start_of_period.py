@@ -1,5 +1,5 @@
-from .event import Event
+from .event_model import EventModel
 
 
-class StartOfPeriodEvent(Event):
+class StartOfPeriodEventModel(EventModel):
     pass

@@ -1,8 +1,8 @@
-from pbp.data_loader.enhanced_pbp_loader import EnhancedPbpLoader
 from pbp.data_loader.euroleague.pbp_loader import ELPbpLoader
+from pbp.data_loader.event_loader import EventLoader
 
 
-class ELEnhancedPbpLoader(ELPbpLoader, EnhancedPbpLoader):
+class ELEnhancedPbpLoader(ELPbpLoader, EventLoader):
     """
     Loads Euroleague enhanced pbp data for game.
     """
