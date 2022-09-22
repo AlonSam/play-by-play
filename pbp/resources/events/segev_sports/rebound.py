@@ -18,3 +18,5 @@ class SegevRebound(Rebound, SegevEventItem):
     @property
     def is_defensive(self):
         return self.sub_type == e.DEFENSIVE_STRING
+
+

@@ -1,6 +1,9 @@
 from abc import ABCMeta, abstractmethod
+from typing import List
 
+import pbp
 import pbp.resources.events as e
+from models.db.stats_model import StatsModel
 from pbp.resources.events.field_goal import FieldGoal
 from pbp.resources.events.foul import Foul
 from pbp.resources.events.free_throw import FreeThrow
@@ -47,13 +50,18 @@ class EventItem(metaclass=ABCMeta):
         return sorted(events, key=lambda k: k.event_id)
 
     @property
-    def players_on_court(self) -> list:
+    def players_on_court(self) -> dict:
         """
         returns dict with list of player ids for each team with players on court for current event
         For all non substitution events on court players are just the same as previous event
         This function gets overwritten in events.substitution.Subsitutiton
         """
         return self.previous_event.players_on_court.copy()
+
+    @property
+    def seconds_remaining(self) -> int:
+        min, sec = self.time.split(':')
+        return int(min) * 60 + int(sec)
 
     @property
     def seconds_since_previous_event(self) -> int:
@@ -84,7 +92,7 @@ class EventItem(metaclass=ABCMeta):
         return False
 
     @property
-    def is_penalty_event(self) -> bool:
+    def is_over_the_limit_event(self) -> bool:
         """
         returns True if the team on defense is over the limit (no fouls to give), False otherwise
         """
@@ -147,6 +155,69 @@ class EventItem(metaclass=ABCMeta):
             lineup_id = "-".join(players)
             lineup_ids[team_id] = lineup_id
         return lineup_ids
+
+    @property
+    def base_stats(self) -> List[StatsModel]:
+        """
+        returns a list of StatsModel objects containing seconds played and possession count stats for event
+        """
+        return self._get_seconds_played_stats()
+
+    def _get_seconds_played_stats(self) -> List[StatsModel]:
+        """
+        makes event StatsModel object for:
+        - seconds played
+        - second chance seconds played
+        - over the limit seconds played
+        """
+        stat_models = []
+        team_ids = list(self.players_on_court.keys())
+        offense_team_id = self.offense_team_id
+        is_over_the_limit = self.is_over_the_limit_event
+        is_second_chance = self.is_second_chance_event
+        if self.seconds_since_previous_event != 0:
+            for team_id, players_ids in self.previous_event.players_on_court.items():
+                seconds_stat_key = pbp.SECONDS_PLAYED_OFFENSE_STRING if team_id == offense_team_id else pbp.SECONDS_PLAYED_DEFENSE_STRING
+                opponent_team_id = team_ids[0] if team_id == team_ids[1] else team_ids[1]
+                previous_event_lineup_ids = self.previous_event.lineup_ids
+                for player_id in players_ids:
+                    keys = [seconds_stat_key]
+                    if is_second_chance:
+                        second_chance_seconds_stat_key = f'{pbp.SECOND_CHANCE_STRING}{seconds_stat_key}'
+                        keys.append(second_chance_seconds_stat_key)
+                    if is_over_the_limit:
+                        over_the_limit_seconds_stat_key = f'{pbp.OVER_THE_LIMIT_STRING}{seconds_stat_key}'
+                        keys.append(over_the_limit_seconds_stat_key)
+                    for key in keys:
+                        stat_model = StatsModel(
+                            player_id=player_id,
+                            team_id=team_id,
+                            stat_key=key,
+                            stat_value=self.seconds_since_previous_event,
+                            opponent_team_id=opponent_team_id,
+                            lineup_id=previous_event_lineup_ids[team_id],
+                            opponent_lineup_id=previous_event_lineup_ids[opponent_team_id]
+                        )
+                        stat_models.append(stat_model)
+        return stat_models
+
+    def _add_lineup_data(self, stats_models: List[StatsModel]) -> List[StatsModel]:
+        team_ids = list(self.players_on_court.keys())
+        lineup_ids = self.lineup_ids
+        for stats_model in stats_models:
+            opponent_team_id = team_ids[0] if stats_model.team_id == team_ids[1] else team_ids[1]
+            stats_model.lineup_id = lineup_ids[stats_model.team_id]
+            stats_model.opponent_team_id = opponent_team_id
+            stats_model.opponent_lineup_id = lineup_ids[opponent_team_id]
+        return stats_models
+
+    def _add_misc_stats(self, stat_key: str) -> List[str]:
+        stat_keys = []
+        if self.is_second_chance_event:
+            stat_keys.append(f'{pbp.SECOND_CHANCE_STRING}{stat_key}')
+        if self.is_over_the_limit_event:
+            stat_keys.append(f'{pbp.OVER_THE_LIMIT_STRING}{stat_key}')
+        return stat_keys
 
     @property
     def data(self):

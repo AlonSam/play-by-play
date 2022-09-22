@@ -1,6 +1,3 @@
-import math
-
-import pbp
 import pbp.resources.events as e
 from pbp.resources.events import Rebound, Foul, FieldGoal
 from pbp.resources.events.segev_sports.event_item import SegevEventItem
@@ -30,44 +27,6 @@ class SegevFieldGoal(FieldGoal, SegevEventItem):
         returns True if shot was assisted, False otherwise
         """
         return self.is_made and hasattr(self, e.ASSIST_ID_STRING)
-
-    @property
-    def shot_distance(self) -> float:
-        """
-        returns the shot distance if coordinates exist, raises Exception otherwise.
-        """
-        if self.x is not None and self.y is not None:
-            x_squared = ((self.x - 5) * 2) ** 2
-            y_squared = (self.y - 50) ** 2
-            shot_distance = math.sqrt(x_squared + y_squared)
-            return round(shot_distance, 1)
-        raise Exception('Cannot calculate distance without shot location data')
-
-    @property
-    def is_corner_3(self) -> bool:
-        """
-        returns True is shot was a corner 3, False otherwise
-        """
-        return self.shot_value == 3 and self.x <= 11
-
-    @property
-    def shot_type(self) -> str:
-        """
-        returns shot type string ('AtRim', 'ShortMidRange', 'LongMidRange', 'Arc3' or 'Corner3')
-        """
-        if self.shot_value == 3:
-            if self.is_corner_3:
-                return pbp.CORNER_3_STRING
-            else:
-                return pbp.ARC_3_STRING
-        if self.shot_distance:
-            if self.shot_distance < pbp.AT_RIM_CUTOFF:
-                return pbp.AT_RIM_STRING
-            elif self.shot_distance < pbp.SHORT_MID_RANGE_CUTOFF:
-                return pbp.SHORT_MID_RANGE_STRING
-            else:
-                return pbp.LONG_MID_RANGE_STRING
-        return pbp.UNKNOWN_SHOT_DISTANCE_STRING
 
     @property
     def is_putback(self) -> bool:

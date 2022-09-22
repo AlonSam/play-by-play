@@ -1,3 +1,4 @@
+from pbp.exceptions import LineupWithDuplicates, InvalidLineupLength
 from pbp.resources.events.segev_sports.event_item import SegevEventItem
 from pbp.resources.events.substitution import Substitution
 
@@ -26,8 +27,6 @@ class SegevSubstitution(Substitution, SegevEventItem):
         validates that the lineup includes exactly 5 players without duplicates. Raises Exceptions otherwise.
         """
         if len(players) != 5:
-            print(f'game_id: {self.game_id}, period: {self.period}, time: {self.time}, lineup: {players}')
-            raise Exception('Lineup does not include 5 players')
+            raise InvalidLineupLength(f'game_id: {self.game_id}, period: {self.period}, time: {self.time}, lineup: {players}')
         if len(players) != len(set(players)):
-            print(f'game_id: {self.game_id}, period: {self.period}, time: {self.time}, lineup: {players}')
-            raise Exception('Lineup has duplicates')
+            raise LineupWithDuplicates(f'game_id: {self.game_id}, period: {self.period}, time: {self.time}, lineup: {players}')

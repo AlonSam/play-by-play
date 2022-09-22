@@ -10,6 +10,10 @@ class SegevEventItem(EventItem):
     Base class for enhanced pbp events from Segev Sports
     """
     def __init__(self, event: SegevPbpItem) -> None:
+        self.previous_event = None
+        self.previous_event_id = None
+        self.next_event = None
+        self.next_event_id = None
         for key, value in event.data.items():
             if value is not None:
                 setattr(self, key, value)

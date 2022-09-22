@@ -9,6 +9,19 @@ from pbp.resources.events.substitution import Substitution
 from pbp.resources.events.timeout import Timeout
 from pbp.resources.events.turnover import Turnover
 
+__all__ = [
+    "Deflection",
+    "EndOfPeriod",
+    "Foul",
+    "FreeThrow",
+    "FieldGoal",
+    "Rebound",
+    "Substitution",
+    "StartOfPeriod",
+    "Timeout",
+    "Turnover"
+]
+
 
 ASSIST_ID_STRING = 'assist_player_id'
 BLOCK_ID_STRING = 'block_player_id'
@@ -26,13 +39,13 @@ BAD_PASS_STRING = 'badpass'
 BALL_HANDLING_STRING = 'ballhandling'
 OFFENSIVE_GOALTENDING_STRING = 'offensivegoaltending'
 LANE_VIOLATION_STRING = 'laneviolation'
-TWENTY_FOUR_SECOND_STRING = '24sec'
-THREE_SECOND_STRING = '3sec'
-FIVE_SECOND_STRING = '5sec'
-EIGHT_SECOND_STRING = '8sec'
+TWENTY_FOUR_SECOND_STRING = '24secondsviolation'
+THREE_SECOND_STRING = '3secondsviolation'
+FIVE_SECOND_STRING = '5secondsviolation'
+EIGHT_SECOND_STRING = '8secondsviolation'
 OUT_OF_BOUNDS_STRING = 'outofbounds'
 OTHER_STRING = 'other'
-BACKCOURT_STRING = 'backcourt'
+BACKCOURT_STRING = 'backcourtviolation'
 DOUBLE_DRIBBLE_STRING = 'doubledribble'
 SUB_OUT_ID_STRING = 'sub_out_player_id'
 SUB_IN_ID_STRING = 'sub_in_player_id'
