@@ -3,9 +3,9 @@ from datetime import datetime
 BASKET_ATTR_MAPPER = {
     'id': 'basket_id',
     'ExternalID': 'game_id',
-    'game_year': 'season',
-    'game_type': 'phase',
     'GN': 'round',
+    'game_type': 'phase',
+    'game_year': 'season',
     'score_team1': 'home_score',
     'score_team2': 'away_score',
     'total_viewers': 'attendance',
@@ -17,6 +17,7 @@ TEAM_NAME_MAPPER = {
     'H. BANK YAHAV JERUSALEM': 'Hapoel Jerusalem',
     'NESS ZIONA': 'Ironi Ness Ziona',
     'HAP. UNET-CREDIT HOLON': 'Hapoel Holon',
+    'HAPOEL U-NET HOLON': 'Hapoel Holon',
     'RISHON LEZION': 'Maccabi Rishon Lezion',
     'BEER SHEVA': 'Hapoel Beer Sheva',
     'GILBOA/GALIL': 'Hapoel Gilboa Galil',
@@ -34,7 +35,8 @@ PHASES_MAPPER = {
     '5': 'Regular Season',
     '16': 'Quarter Finals',
     '26': 'Semi Finals',
-    '17': 'Finals'
+    '17': 'Finals',
+    '10': 'Winner Cup'
 }
 
 
@@ -54,7 +56,17 @@ class SegevDetailsItem:
                 if key == 'ref_eng':
                     setattr(self, value, [ref.strip() for ref in data.get(key).split(',')])
                 elif key == 'game_type':
-                    setattr(self, value, PHASES_MAPPER[str(data.get(key))])
+                    phase = PHASES_MAPPER[str(data.get(key))]
+                    if 'Finals' in phase:
+                        setattr(self, value, 'Playoffs')
+                        setattr(self, 'round', phase)
+                        setattr(self, 'game_num', data.get('GN'))
+                    else:
+                        setattr(self, value, phase)
+                elif key == 'game_year':
+                    game_year = data.get(key)
+                    season = str(game_year - 1) + '-' + str(game_year)[2:]
+                    setattr(self, value, season)
                 else:
                     setattr(self, value, data.get(key))
 
