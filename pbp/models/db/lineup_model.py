@@ -2,7 +2,7 @@ from typing import List, Dict
 
 from pydantic import validator, Field
 
-from pbp.models.custom_base_model import CustomBaseModel
+from models.custom_base_model import CustomBaseModel
 
 
 class LineupModel(CustomBaseModel):
@@ -13,7 +13,7 @@ class LineupModel(CustomBaseModel):
     possessions: Dict[str, List[str]] = dict()
 
     @validator('player_ids', always=True)
-    def validate_player_ids(cls, value, values):
+    def validate_player_ids(cls, value, values) -> List[str]:
         if value is not None:
             return value
         players = [player for player in values.get('id').split('-')]
@@ -22,5 +22,5 @@ class LineupModel(CustomBaseModel):
         return players
 
     @property
-    def data(self) -> Dict:
-        return self.dict(by_alias=True)
+    def data(self):
+        return self.dict(by_alias=True, exclude_none=True)
