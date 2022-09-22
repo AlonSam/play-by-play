@@ -1,3 +1,5 @@
+import numpy as np
+
 KEY_ATTR_MAPPER = {
     'id': 'event_id',
     'parentActionId': 'parent_event_id',
@@ -38,7 +40,6 @@ class SegevPbpItem:
 
     def _set_attributes(self, data):
         self.action_type = self.fix_actions(self.action_type)
-        self.seconds_remaining = self.get_sec_remaining()
         self.period = int(self.period)
         action_meta = data['parameters']
         if 'type' in action_meta.keys():
@@ -73,10 +74,6 @@ class SegevPbpItem:
                 elif action_meta['isBenchFoul'] == 1:
                     self.sub_type = 'bench_technical'
 
-    def get_sec_remaining(self) -> int:
-        min, sec = self.time.split(':')
-        return int(min) * 60 + int(sec)
-
     @staticmethod
     def fix_actions(act: str) -> str:
         if act in ACTIONS_ATTR_MAPPER.keys():
@@ -86,27 +83,74 @@ class SegevPbpItem:
         return act
 
     def fix_coords(self):
-        self.x -= 70
-        if self.y < 500:
-            if self.shot_value == 3:
-                if 650 > self.x >= 80:
-                    self.x -= 60
-                elif 1300 > self.x > 650:
-                    self.x += 80
-        self.x = round((self.x / 13.75), 2)
-        self.y = round(((self.y / 17.5) / 2), 2)
-        if self.x > 100:
-            self.x -= 2
-        elif self.x < 0:
-            self.x += 2
-        elif self.y < 20:
-            if 68 > self.x > 55:
-                self.x -= 6
-            elif 45 > self.x > 32:
-                self.x += 6
-        temp = self.x
-        self.x = round(self.y, 2)
-        self.y = 100 - round(temp, 2)
+        # self.x -= 70
+        # if self.y < 500:
+        #     if self.shot_value == 3:
+        #         if 650 > self.x >= 80:
+        #             self.x -= 60
+        #         elif 1300 > self.x > 650:
+        #             self.x += 80
+        # self.x = round((self.x / 13.75), 2)
+        # self.y = round(((self.y / 17.5) / 2), 2)
+        # if self.x > 100:
+        #     self.x -= 2
+        # elif self.x < 0:
+        #     self.x += 2
+        # elif self.y < 20:
+        #     if 68 > self.x > 55:
+        #         self.x -= 6
+        #     elif 45 > self.x > 32:
+        #         self.x += 6
+        # self.x = round(self.x*5, 2)
+        # self.y = round((self.y*10), 2)
+        x = self.x / 3
+        y = (self.y / 3) * (14 / 15)
+        # if self.shot_value == 3 and y < 250:
+        #     x += (x - 250) * 0.2
+        #     if y < 95:
+        #         x -= (x - 250) * 0.05
+        #     else:
+        #         x, y = self.fix_distance(x, y, 0.9)
+        # else:
+        x += (x - 250) * 0.3
+        y -= y * 0.1
+        if self.shot_value == 3:
+            if y < 100:
+                x -= (x - 250) * 0.15
+            elif 125 < x < 375:
+                x, y = self.fix_distance(x, y, 0.9)
+            else:
+                x, y = self.fix_distance(x, y, 0.82)
+            if self.is_inside_arc(x, y):
+                if y < 100:
+                    x, y = self.fix_distance(x, y, new_distance=225.0)
+                else:
+                    x, y = self.fix_distance(x, y, new_distance=235.0)
+        else:
+            x, y = self.fix_distance(x, y, 0.85)
+        self.x = x
+        self.y = y
+
+    @staticmethod
+    def is_inside_arc(x, y):
+        rim = np.array((250.0, 52.5))
+        point = np.array((x, y))
+        distance = np.linalg.norm(point - rim)
+        return distance < 225.0
+
+    @staticmethod
+    def fix_distance(x: float, y: float, ratio: float = None, new_distance: float = None):
+        rim = np.array((250.0, 52.5))
+        point = np.array((x, y))
+        point_to_rim_vector = point - rim
+        normalized_vector = point_to_rim_vector / np.linalg.norm(point_to_rim_vector)
+        if new_distance is None:
+            new_distance = np.linalg.norm(point_to_rim_vector) * ratio
+        new_vector = normalized_vector * new_distance
+        new_point = rim + new_vector
+        return new_point
+
+
 
     @property
     def data(self):
