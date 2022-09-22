@@ -10,3 +10,7 @@ class CustomBaseModel(BaseModel):
     class Config:
         alias_generator = to_camel
         allow_population_by_field_name = True
+
+    @property
+    def data(self):
+        return self.dict(by_alias=True, exclude_none=True)
