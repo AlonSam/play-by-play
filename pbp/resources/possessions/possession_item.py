@@ -1,14 +1,9 @@
+from itertools import groupby
+from operator import itemgetter
+
 import pbp
-from pbp.models.events.field_goal import FieldGoalEventModel
-from pbp.models.events.free_throw import FreeThrowEventModel
-from pbp.models.events.rebound import ReboundEventModel
-from pbp.models.events.substitution import SubstitutionEventModel
-from pbp.models.events.timeout import TimeoutEventModel
-from pbp.models.events.turnover import TurnoverEventModel
-
-
-class EmptyPossessionError(Exception):
-    pass
+from models.db.stats_model import StatsModel
+from pbp.models.db.events import *
 
 
 class PossessionItem(object):
@@ -20,6 +15,10 @@ class PossessionItem(object):
     """
     def __init__(self, events):
         self.events = events
+        self.previous_possession = None
+        self.previous_possession_id = None
+        self.next_possession = None
+        self.next_possession_id = None
 
     @property
     def game_id(self):
@@ -34,7 +33,7 @@ class PossessionItem(object):
         """
         returns the time remaining (MM:SS) in the period when the possession started
         """
-        if not hasattr(self, "previous_possession") or not self.previous_possession:
+        if self.previous_possession is None or isinstance(self.previous_possession.events[-1], EndOfPeriodEventModel):
             return self.events[0].time
         return self.previous_possession.events[-1].time
 
@@ -47,7 +46,7 @@ class PossessionItem(object):
 
     @property
     def duration(self):
-        if not hasattr(self, "previous_possession") or not self.previous_possession:
+        if self.previous_possession is None or isinstance(self.previous_possession.events[-1], EndOfPeriodEventModel):
             start_time = self.events[0].seconds_remaining
         else:
             start_time = self.previous_possession.events[-1].seconds_remaining
@@ -71,38 +70,18 @@ class PossessionItem(object):
         """
         return self.events[0].score
 
-    def get_team_ids(self):
-        """
-        returns a list with the team ids fo both teams playing
-        """
-        team_ids = list(
-            set([event.team_id for event in self.events if hasattr(event, "team_id") and event.team_id != '0']))
-        prev_poss = self.previous_possession
-        while len(team_ids) != 2 and prev_poss:
-            team_ids += [event.team_id for event in prev_poss.events if event.team_id != '0']
-            team_ids = list(set(team_ids))
-            prev_poss = prev_poss.previous_possession
-        next_poss = self.next_possession
-        while len(team_ids) != 2 and next_poss:
-            team_ids += [event.team_id for event in next_poss.events if event.team_id != '0']
-            team_ids = list(set(team_ids))
-            next_poss = next_poss.next_possession
-        return team_ids
-
     @property
     def offense_team_id(self):
         return self.events[0].offense_team_id
 
     @property
     def defense_team_id(self):
-        team_ids = self.get_team_ids()
-        return team_ids[0] if self.offense_team_id == team_ids[1] else team_ids[1]
+        return self.team_ids[0] if self.offense_team_id == self.team_ids[1] else self.team_ids[1]
 
     @property
     def offense_lineup_id(self):
         if self.offense_team_id == '0':
-            team_ids = self.get_team_ids()
-            return self.events[-1].lineup_ids[team_ids[0]]
+            return self.events[-1].lineup_ids[self.team_ids[0]]
         if self.offense_lineup_changed_during_possession and self.possession_ends_with_ft:
             return self.events[0].lineup_ids[self.offense_team_id]
         return self.events[-1].lineup_ids[self.offense_team_id]
@@ -110,8 +89,7 @@ class PossessionItem(object):
     @property
     def defense_lineup_id(self):
         if self.offense_team_id == '0':
-            team_ids = self.get_team_ids()
-            return self.events[-1].lineup_ids[team_ids[1]]
+            return self.events[-1].lineup_ids[self.team_ids[1]]
         if self.defense_lineup_changed_during_possession and self.possession_ends_with_ft:
             return self.events[0].lineup_ids[self.defense_team_id]
         return self.events[-1].lineup_ids[self.defense_team_id]
@@ -132,7 +110,7 @@ class PossessionItem(object):
     def possession_ends_with_ft(self):
         if isinstance(self.events[-1], FreeThrowEventModel):
             return True
-        if isinstance(self.events[-1], ReboundEventModel) and self.events[-1].missed_shot_type == 'FreeThrow':
+        if isinstance(self.events[-1], ReboundEventModel) and self.events[-1].missed_shot_zone == 'FreeThrow':
             return True
         return False
 
@@ -205,8 +183,8 @@ class PossessionItem(object):
         if isinstance(self.previous_possession_ending_event,
                       (FieldGoalEventModel, FreeThrowEventModel)) and self.previous_possession_ending_event.is_made:
             if isinstance(self.previous_possession_ending_event, FieldGoalEventModel):
-                shot_type = self.previous_possession_ending_event.shot_type
-                return f'Off{shot_type}{pbp.MAKE_STRING}'
+                shot_zone = self.previous_possession_ending_event.shot_zone
+                return f'Off{shot_zone}{pbp.MAKE_STRING}'
             return f'Off{pbp.FREE_THROW_STRING}{pbp.MAKE_STRING}'
         if isinstance(self.previous_possession_ending_event, TurnoverEventModel):
             if self.previous_possession_ending_event.is_steal:
@@ -220,11 +198,11 @@ class PossessionItem(object):
                 if event.event_id == missed_shot_event_id:
                     missed_shot = event
                     break
-            if hasattr(missed_shot, 'shot_type'):
-                shot_type = missed_shot.shot_type
+            if hasattr(missed_shot, 'shot_zone'):
+                shot_zone = missed_shot.shot_zone
                 if missed_shot.is_blocked:
-                    return f'Off{shot_type}{pbp.BLOCK_STRING}'
-                return f'Off{shot_type}{pbp.MISS_STRING}'
+                    return f'Off{shot_zone}{pbp.BLOCK_STRING}'
+                return f'Off{shot_zone}{pbp.MISS_STRING}'
             return f'Off{pbp.FREE_THROW_STRING}{pbp.MISS_STRING}'
         return pbp.OFF_DEADBALL_STRING
 
@@ -263,6 +241,84 @@ class PossessionItem(object):
             if isinstance(self.previous_possession_ending_event, TurnoverEventModel):
                 if self.previous_possession_ending_event.is_steal:
                     return self.previous_possession_ending_event.steal_player_id
+
+    @property
+    def possession_stats(self):
+        grouper = itemgetter(
+            "player_id",
+            "team_id",
+            "opponent_team_id",
+            "lineup_id",
+            "opponent_lineup_id",
+            "stat_key",
+        )
+        results = []
+        event_stats = [
+            event_stat.dict() for event in self.events for event_stat in event.event_stats
+        ]
+        for key, group in groupby(sorted(event_stats, key=grouper), grouper):
+            temp_dict = dict(
+                zip(
+                    [
+                        "player_id",
+                        "team_id",
+                        "opponent_team_id",
+                        "lineup_id",
+                        "opponent_lineup_id",
+                        "stat_key",
+                    ],
+                    key,
+                )
+            )
+            temp_dict["stat_value"] = sum(item["stat_value"] for item in group)
+            results.append(StatsModel(**temp_dict))
+        points_scored = self.events[-1].score[self.offense_team_id] - self.score[self.offense_team_id]
+        names = ['offense', 'defense']
+        for name in names:
+            team_id = getattr(self, f'{name}_team_id')
+            opponent_team_id = self.defense_team_id if team_id == self.offense_team_id else self.offense_team_id
+            lineup_id = getattr(self, f'{name}_lineup_id')
+            opponent_lineup_id = self.defense_lineup_id if lineup_id == self.offense_lineup_id else self.offense_lineup_id
+            lineup = lineup_id.split('-')
+            possession_stat_key = pbp.OFFENSIVE_POSSESSION_STRING if name == 'offense' else pbp.DEFENSIVE_POSSESSION_STRING
+            for player_id in lineup:
+                results.append(
+                    StatsModel(
+                        player_id=player_id,
+                        team_id=team_id,
+                        opponent_team_id=opponent_team_id,
+                        lineup_id=lineup_id,
+                        opponent_lineup_id=opponent_lineup_id,
+                        stat_key=possession_stat_key,
+                        stat_value=1
+                    )
+                )
+                if points_scored > 0:
+                    multiplier = 1 if name == 'offense' else -1
+                    results.append(
+                        StatsModel(
+                            player_id=player_id,
+                            team_id=team_id,
+                            opponent_team_id=opponent_team_id,
+                            lineup_id=lineup_id,
+                            opponent_lineup_id=opponent_lineup_id,
+                            stat_key=pbp.PLUS_MINUS_STRING,
+                            stat_value=points_scored * multiplier
+                        )
+                    )
+                    score_stat_key = pbp.TEAM_POINTS if name == 'offense' else pbp.OPPONENT_POINTS
+                    results.append(
+                        StatsModel(
+                            player_id=player_id,
+                            team_id=team_id,
+                            opponent_team_id=opponent_team_id,
+                            lineup_id=lineup_id,
+                            opponent_lineup_id=opponent_lineup_id,
+                            stat_key=score_stat_key,
+                            stat_value=points_scored
+                        )
+                    )
+        return results
 
     @property
     def data(self):
