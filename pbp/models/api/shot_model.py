@@ -1,4 +1,4 @@
-from models.api.api_base_model import APIBaseModel
+from pbp.models.api.api_base_model import APIBaseModel
 
 
 class ShotModel(APIBaseModel):

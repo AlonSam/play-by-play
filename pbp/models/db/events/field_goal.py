@@ -6,7 +6,8 @@ class FieldGoalEventModel(EventModel):
     x: float
     y: float
     shot_distance: float
-    shot_type: str
+    basic_shot_zone: str
+    shot_zone: str
     shot_value: int
     is_putback: bool
     is_assisted: bool

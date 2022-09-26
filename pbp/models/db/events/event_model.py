@@ -1,6 +1,9 @@
+from typing import List
+
 from pydantic import conint, NonNegativeInt
 
-from ..custom_base_model import CustomBaseModel
+from pbp.models.custom_base_model import CustomBaseModel
+from pbp.models.db.stats_model import StatsModel
 
 
 class EventModel(CustomBaseModel):
@@ -18,7 +21,8 @@ class EventModel(CustomBaseModel):
     seconds_since_previous_event: NonNegativeInt
     score: dict
     margin: int
-    is_penalty_event: bool
+    event_stats: List[StatsModel] = []
+    is_over_the_limit_event: bool
     is_second_chance_event: bool
     is_possession_ending_event: bool
     fouls_to_give: dict
@@ -26,3 +30,7 @@ class EventModel(CustomBaseModel):
     parent_event_id: str
     previous_event_id: str = None
     next_event_id: str = None
+
+    @property
+    def data(self):
+        return self.dict(by_alias=True, exclude_none=True, exclude={'event_stats'})

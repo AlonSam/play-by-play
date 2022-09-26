@@ -1,18 +1,22 @@
-from typing import Dict
+from pydantic import Field
 
-from pydantic import Field, root_validator
-
-from models.api.api_base_model import APIBaseModel
+from pbp.models.api.api_base_model import APIBaseModel
 
 two_pt_zones = ['at_rim', 'paint', 'left_corner_mid_range', 'left_wing_mid_range', 'center_mid_range',
-                   'right_wing_mid_range', 'right_corner_mid_range']
+                'right_wing_mid_range', 'right_corner_mid_range']
+basic_two_pt_zones = ['at_rim', 'paint', 'mid_range']
 three_pt_zones = ['right_corner_3', 'left_corner_3', 'right_wing_3', 'left_wing_3', 'center_3']
+basic_three_pt_zones = ['corner_3', 'above_the_break_3']
+all_zones = ['two_pt', 'three_pt', 'mid_range'] + two_pt_zones + three_pt_zones + basic_three_pt_zones
+
 
 def get_makes_or_attempts(values, zone, string):
     return values.get(f'{zone}_{string}')
 
+
 def get_assisted_unassisted(values, zone, string):
     return values.get(f'{string}_{zone}')
+
 
 def to_camel(string: str) -> str:
     words = [word for word in string.split('_')]
@@ -99,8 +103,8 @@ class PlayerTotalsModel(APIBaseModel):
     assisted_corner_3: int = Field(default=0)
     assisted_right_corner_3: int = Field(default=0)
     assisted_left_corner_3: int = Field(default=0)
-    unassisted_2_pts: int = Field(default=0)
-    unassisted_3_pts: int = Field(default=0)
+    unassisted_two_pt: int = Field(default=0)
+    unassisted_three_pt: int = Field(default=0)
     unassisted_at_rim: int = Field(default=0)
     unassisted_paint: int = Field(default=0)
     unassisted_mid_range: int = Field(default=0)
@@ -222,8 +226,8 @@ class PlayerTotalsModel(APIBaseModel):
     above_the_break_3_blocks: int = Field(default=0)
     offensive_rating: float = Field(default=0.0)
     defensive_rating: float = Field(default=0.0)
-    assisted_2s_pct: float = Field(default=0.0)
-    assisted_3s_pct: float = Field(default=0.0)
+    assisted_two_pt_pct: float = Field(default=0.0)
+    assisted_three_pt_pct: float = Field(default=0.0)
     three_pt_pct: float = Field(default=0.0)
     second_chance_three_pt_pct: float = Field(default=0.0)
     two_pt_pct: float = Field(default=0.0)
@@ -259,55 +263,55 @@ class PlayerTotalsModel(APIBaseModel):
     self_offensive_rebounds_pct: float = Field(default=0.0)
     at_rim_frequency: float = Field(default=0.0)
     at_rim_accuracy: float = Field(default=0.0)
-    at_rim_pct_assisted: float = Field(default=0.0)
+    assisted_at_rim_pct: float = Field(default=0.0)
     paint_frequency: float = Field(default=0.0)
     paint_accuracy: float = Field(default=0.0)
-    paint_pct_assisted: float = Field(default=0.0)
+    assisted_paint_pct: float = Field(default=0.0)
     mid_range_frequency: float = Field(default=0.0)
     mid_range_accuracy: float = Field(default=0.0)
-    mid_range_pct_assisted: float = Field(default=0.0)
+    assisted_mid_range_pct: float = Field(default=0.0)
     left_corner_mid_range_frequency: float = Field(default=0.0)
     left_corner_mid_range_accuracy: float = Field(default=0.0)
-    left_corner_mid_range_pct_assisted: float = Field(default=0.0)
+    assisted_left_corner_mid_range_pct: float = Field(default=0.0)
     left_wing_mid_range_frequency: float = Field(default=0.0)
     left_wing_mid_range_accuracy: float = Field(default=0.0)
-    left_wing_mid_range_pct_assisted: float = Field(default=0.0)
+    assisted_left_wing_mid_range_pct: float = Field(default=0.0)
     center_mid_range_frequency: float = Field(default=0.0)
     center_mid_range_accuracy: float = Field(default=0.0)
-    center_mid_range_pct_assisted: float = Field(default=0.0)
+    assisted_center_mid_range_pct: float = Field(default=0.0)
     right_wing_mid_range_frequency: float = Field(default=0.0)
     right_wing_mid_range_accuracy: float = Field(default=0.0)
-    right_wing_mid_range_pct_assisted: float = Field(default=0.0)
+    assisted_right_wing_mid_range_pct: float = Field(default=0.0)
     right_corner_mid_range_frequency: float = Field(default=0.0)
     right_corner_mid_range_accuracy: float = Field(default=0.0)
-    right_corner_mid_range_pct_assisted: float = Field(default=0.0)
+    assisted_right_corner_mid_range_pct: float = Field(default=0.0)
     corner_3_frequency: float = Field(default=0.0)
     corner_3_accuracy: float = Field(default=0.0)
-    corner_3_pct_assisted: float = Field(default=0.0)
+    assisted_corner_3_pct: float = Field(default=0.0)
     left_corner_3_frequency: float = Field(default=0.0)
     left_corner_3_accuracy: float = Field(default=0.0)
-    left_corner_3_pct_assisted: float = Field(default=0.0)
+    assisted_left_corner_3_pct: float = Field(default=0.0)
     right_corner_3_frequency: float = Field(default=0.0)
     right_corner_3_accuracy: float = Field(default=0.0)
-    right_corner_3_pct_assisted: float = Field(default=0.0)
+    assisted_right_corner_3_pct: float = Field(default=0.0)
     above_the_break_3_frequency: float = Field(default=0.0)
     above_the_break_3_accuracy: float = Field(default=0.0)
-    above_the_break_3_pct_assisted: float = Field(default=0.0)
+    assisted_above_the_break_3_pct: float = Field(default=0.0)
     right_wing_3_frequency: float = Field(default=0.0)
     right_wing_3_accuracy: float = Field(default=0.0)
-    right_wing_3_pct_assisted: float = Field(default=0.0)
+    assisted_right_wing_3_pct: float = Field(default=0.0)
     left_wing_3_frequency: float = Field(default=0.0)
     left_wing_3_accuracy: float = Field(default=0.0)
-    left_wing_3_pct_assisted: float = Field(default=0.0)
+    assisted_left_wing_3_pct: float = Field(default=0.0)
     second_chance_at_rim_frequency: float = Field(default=0.0)
     second_chance_at_rim_accuracy: float = Field(default=0.0)
-    second_chance_at_rim_pct_assisted: float = Field(default=0.0)
+    assisted_second_chance_at_rim_pct: float = Field(default=0.0)
     second_chance_corner_3_frequency: float = Field(default=0.0)
     second_chance_corner_3_accuracy: float = Field(default=0.0)
-    second_chance_corner_3_pct_assisted: float = Field(default=0.0)
+    assisted_second_chance_corner_3_pct: float = Field(default=0.0)
     second_chance_above_the_break_3_frequency: float = Field(default=0.0)
     second_chance_above_the_break_3_accuracy: float = Field(default=0.0)
-    second_chance_above_the_break_3_pct_assisted: float = Field(default=0.0)
+    assisted_second_chance_above_the_break_3_pct: float = Field(default=0.0)
     shooting_fouls_drawn_pct: float = Field(default=0.0)
     avg_2pt_shot_distance: float = Field(default=0.0)
     avg_3pt_shot_distance: float = Field(default=0.0)
@@ -315,31 +319,78 @@ class PlayerTotalsModel(APIBaseModel):
     class Config:
         alias_generator = to_camel
 
-    @root_validator
-    def make_aggregations(cls, values: Dict) -> Dict:
-        for zone in two_pt_zones:
-            values[f'{zone}_makes'] = values.get(f'assisted_{zone}') + values.get(f'unassisted_{zone}')
-        for zone in three_pt_zones:
-            values[f'{zone}_makes'] = values.get(f'assisted_{zone}') + values.get(f'unassisted_{zone}')
-        makes_attempts = ['makes', 'attempts']
-        for string in makes_attempts:
-            values[f'two_pt_{string}'] = sum([get_makes_or_attempts(values, zone, string) for zone in two_pt_zones])
-            values[f'three_pt_{string}'] = sum([get_makes_or_attempts(values, zone, string) for zone in three_pt_zones])
-            values[f'mid_range_{string}'] = sum([get_makes_or_attempts(values, zone, string) for zone in two_pt_zones[2:]])
-            values[f'corner_3_{string}'] = sum([get_makes_or_attempts(values, zone, string) for zone in three_pt_zones[:2]])
-            values[f'above_the_break_3_{string}'] = sum([get_makes_or_attempts(values, zone, string) for zone in three_pt_zones[2:]])
-        assisted_unassisted = ['assisted', 'unassisted']
-        for string in assisted_unassisted:
-            values[f'{string}_2_pts'] = sum([get_assisted_unassisted(values, zone, string) * 2 for zone in two_pt_zones])
-            values[f'{string}_3_pts'] = sum([get_assisted_unassisted(values, zone, string) * 3 for zone in three_pt_zones])
-            values[f'{string}_mid_range'] = sum([get_assisted_unassisted(values, zone, string) for zone in two_pt_zones[2:]])
-            values[f'{string}_corner_3'] = sum([get_assisted_unassisted(values, zone, string) for zone in three_pt_zones[:2]])
-            values[f'{string}_above_the_break_3'] = sum([get_assisted_unassisted(values, zone, string) for zone in three_pt_zones[2:]])
-        return values
-
-
-
-
-
-
-
+#     @root_validator
+#     def make_aggregations(cls, values: Dict) -> Dict:
+#         values['seconds_played'] = values.get('seconds_played_off') + values.get('seconds_played_def')
+#         values.update(cls._make_shot_aggregations(values))
+#         values.update(cls._calculate_shooting_percentages(values))
+#         values.update(cls._make_rebound_aggregations(values))
+#         return values
+#
+#     @staticmethod
+#     def _make_rebound_aggregations(values: Dict) -> Dict:
+#         prefixes = ['off', 'def']
+#         suffixes = ['rebounds', 'rebound_opportunities']
+#         for prefix in prefixes:
+#             for suffix in suffixes:
+#                 values[f'{prefix}_two_pt_{suffix}'] = sum(
+#                     [values.get(f'{prefix}_{zone}_{suffix}') for zone in basic_two_pt_zones])
+#                 values[f'{prefix}_three_pt_{suffix}'] = sum(
+#                     [values.get(f'{prefix}_{zone}_{suffix}') for zone in basic_three_pt_zones])
+#                 values[f'{prefix}_{suffix}'] = values.get(f'{prefix}_two_pt_{suffix}') + \
+#                                                       values.get(f'{prefix}_three_pt_{suffix}') + \
+#                                                       values.get(f'{prefix}_free_throw_{suffix}')
+#         return values
+#
+#     @staticmethod
+#     def _make_shot_aggregations(values: Dict) -> Dict:
+#         for zone in two_pt_zones:
+#             values[f'{zone}_makes'] = values.get(f'assisted_{zone}') + values.get(f'unassisted_{zone}')
+#         for zone in three_pt_zones:
+#             values[f'{zone}_makes'] = values.get(f'assisted_{zone}') + values.get(f'unassisted_{zone}')
+#         prefixes = ['', 'second_chance_']
+#         suffixes = ['makes', 'attempts']
+#         for prefix in prefixes:
+#             for suffix in suffixes:
+#                 values[f'{prefix}two_pt_{suffix}'] = sum(
+#                     [get_makes_or_attempts(values, zone, suffix) for zone in two_pt_zones])
+#                 values[f'{prefix}three_pt_{suffix}'] = sum(
+#                     [get_makes_or_attempts(values, zone, suffix) for zone in three_pt_zones])
+#                 values[f'{prefix}mid_range_{suffix}'] = sum(
+#                     [get_makes_or_attempts(values, zone, suffix) for zone in two_pt_zones[2:]])
+#                 values[f'{prefix}corner_3_{suffix}'] = sum(
+#                     [get_makes_or_attempts(values, zone, suffix) for zone in three_pt_zones[:2]])
+#                 values[f'{prefix}above_the_break_3_{suffix}'] = sum(
+#                     [get_makes_or_attempts(values, zone, suffix) for zone in three_pt_zones[2:]])
+#         suffixes = ['assisted', 'unassisted']
+#         for suffix in suffixes:
+#             values[f'{suffix}_2_pts'] = sum(
+#                 [get_assisted_unassisted(values, zone, suffix) * 2 for zone in two_pt_zones])
+#             values[f'{suffix}_3_pts'] = sum(
+#                 [get_assisted_unassisted(values, zone, suffix) * 3 for zone in three_pt_zones])
+#             values[f'{suffix}_mid_range'] = sum(
+#                 [get_assisted_unassisted(values, zone, suffix) for zone in two_pt_zones[2:]])
+#             values[f'{suffix}_corner_3'] = sum(
+#                 [get_assisted_unassisted(values, zone, suffix) for zone in three_pt_zones[:2]])
+#             values[f'{suffix}_above_the_break_3'] = sum(
+#                 [get_assisted_unassisted(values, zone, suffix) for zone in three_pt_zones[2:]])
+#         return values
+#
+#     @staticmethod
+#     def _calculate_shooting_percentages(values: Dict) -> Dict:
+#         for zone in all_zones:
+#             success_num = values.get(f'{zone}_makes')
+#             attempts = values.get(f'{zone}_attempts')
+#             values[f'{zone}_accuracy'] = calculate_percentages(success_num, attempts)
+#             if zone in two_pt_zones or zone in basic_two_pt_zones:
+#                 zone_attempts = values.get('two_pt_attempts')
+#             else:
+#                 zone_attempts = values.get('three_pt_attempts')
+#             values[f'{zone}_frequency'] = calculate_percentages(attempts, zone_attempts)
+#         return values
+#
+#
+# def calculate_percentages(success_num: int, attempts: int) -> float:
+#     if attempts == 0:
+#         return 0.0
+#     return round(success_num / attempts, 2)

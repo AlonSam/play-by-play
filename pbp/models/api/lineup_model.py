@@ -1,4 +1,4 @@
-from models.api.api_base_model import APIBaseModel
+from pbp.models.api.api_base_model import APIBaseModel
 
 
 class LineupAPIModel(APIBaseModel):
@@ -6,7 +6,6 @@ class LineupAPIModel(APIBaseModel):
     players: str
     team_name: str
     team_id: str
-
 
     @property
     def data(self):

@@ -1,4 +1,4 @@
-from models.custom_base_model import CustomBaseModel
+from pbp.models.custom_base_model import CustomBaseModel
 
 
 class BoxScoreModel(CustomBaseModel):
